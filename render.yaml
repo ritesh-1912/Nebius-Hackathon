@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: upgrade-pilot
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: NEBIUS_API_KEY
+        sync: false
+      - key: NEBIUS_BASE_URL
+        value: https://api.studio.nebius.ai/v1
+      - key: MODEL_ULTRA
+        value: nvidia/Nemotron-3-Ultra-550b-a55b
+      - key: MODEL_SUPER
+        value: nvidia/nemotron-3-super-120b-a12b
+      - key: MODEL_NANO
+        value: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: DAILY_TOKEN_LIMIT
+        value: "500000"
+      - key: MAX_CONCURRENT_RUNS
+        value: "1"
+      - key: PER_RUN_TIMEOUT_SECONDS
+        value: "300"
