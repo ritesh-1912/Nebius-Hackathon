@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "upgrade-pilot"
+version = "0.1.0"
+description = "Autonomous Python dependency migration agent powered by NVIDIA Nemotron on Nebius Token Factory"
+readme = "README.md"
+authors = [{ name = "Ritesh Garg" }]
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0",
+    "openai>=1.20.0",
+    "tavily-python>=0.3.3",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.27.0",
+    "tenacity>=8.2.0",
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+upgrade-pilot = "upgrade_pilot.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

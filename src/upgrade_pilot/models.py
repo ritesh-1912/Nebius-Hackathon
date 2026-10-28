@@ -59,3 +59,76 @@ class TavilySearchResponse(BaseModel):
     results: List[TavilySearchResultItem] = Field(default_factory=list)
     raw_answer: Optional[str] = None
     is_mock: bool = False
+
+
+class StructuredPatchEdit(BaseModel):
+    """A single structured edit: search text and its replacement."""
+
+    file: str
+    search: str
+    replace: str
+    explanation: Optional[str] = None
+
+
+class TestSummaryPayload(BaseModel):
+    """Structured test outcome summary for events."""
+
+    total: int = 0
+    passed: int = 0
+    failed: int = 0
+    failed_test_names: List[str] = Field(default_factory=list)
+    output_tail: str = ""
+
+
+class ResearchItem(BaseModel):
+    """Summarized research finding with source URL."""
+
+    query: str
+    source_url: str
+    title: str = ""
+    note: str
+
+
+class CallTelemetry(BaseModel):
+    """Telemetry for a single LLM invocation."""
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    reasoning_tokens: int = 0
+    cost_usd: float = 0.0
+
+
+class EventTelemetry(BaseModel):
+    """Telemetry snapshot included with events."""
+
+    current_tier: Optional[str] = None
+    call_tokens: Optional[CallTelemetry] = None
+    cumulative: Optional[CostSummary] = None
+
+
+class EventPayload(BaseModel):
+    """Payload data associated with an agent event."""
+
+    test_summary: Optional[TestSummaryPayload] = None
+    research_findings: Optional[List[ResearchItem]] = None
+    plan_markdown: Optional[str] = None
+    patches: Optional[List[StructuredPatchEdit]] = None
+    diff: Optional[str] = None
+    pr_summary: Optional[str] = None
+
+
+class AgentEvent(BaseModel):
+    """Typed event streamed during the agent migration loop."""
+
+    event_id: str
+    run_id: str
+    demo_id: str
+    step: str  # INIT | BASELINE_TEST | RESEARCH | PLANNING | PATCHING | VERIFYING | REVIEW | COMPLETED | FAILED
+    iteration: int = 0
+    max_iterations: int = 5
+    status: str  # pending | running | success | error
+    message: str
+    timestamp: str
+    payload: EventPayload = Field(default_factory=EventPayload)
+    telemetry: EventTelemetry = Field(default_factory=EventTelemetry)
+

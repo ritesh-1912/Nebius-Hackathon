@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     NEBIUS_TIMEOUT_SECONDS: float = 60.0
     NEBIUS_MAX_RETRIES: int = 3
     SANDBOX_TIMEOUT_SECONDS: int = 25
+    MAX_ITERATIONS: int = 5
+    MAX_TOKEN_BUDGET: int = 60000
 
     # Optional price overrides (USD per 1M tokens)
     PRICE_ULTRA_INPUT: float = DEFAULT_PRICE_PER_1M_TOKENS["ultra"]["input"]
