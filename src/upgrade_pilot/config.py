@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     SANDBOX_TIMEOUT_SECONDS: int = 25
     MAX_ITERATIONS: int = 5
     MAX_TOKEN_BUDGET: int = 60000
+    PER_RUN_TIMEOUT_SECONDS: int = 300
+    MAX_CONCURRENT_RUNS: int = 1
 
     # Optional price overrides (USD per 1M tokens)
     PRICE_ULTRA_INPUT: float = DEFAULT_PRICE_PER_1M_TOKENS["ultra"]["input"]
