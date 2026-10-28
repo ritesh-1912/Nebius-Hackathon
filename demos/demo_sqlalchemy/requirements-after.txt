@@ -1,0 +1,2 @@
+sqlalchemy>=2.0.30,<2.1.0
+pytest>=8.0.0
