@@ -586,6 +586,13 @@ def run_upgrade_pipeline(
                     "re-triggers validation indefinitely! You MUST replace `self.total_amount = round(...)` with "
                     "`object.__setattr__(self, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2))`.\n"
                 )
+            if "DID NOT RAISE ValidationError" in (last_test_res.error_text or ""):
+                recursion_hint += (
+                    "\n### CRITICAL VALIDATION GUARD FIX:\n"
+                    "A test failed because ValidationError was NOT raised! In `OrderService.apply_discount`, you MUST assign "
+                    "`order.discount_pct = discount` directly (do NOT use `object.__setattr__` for discount_pct!). "
+                    "Pydantic's `validate_assignment=True` must check bounds and raise `ValidationError` on invalid discount (e.g. > 100%).\n"
+                )
 
             super_prompt = (
                 f"You are Nemotron 3 Super, an expert Python code patcher.\n\n"
@@ -610,7 +617,7 @@ def run_upgrade_pipeline(
                 f"     * Field validators: replace `@validator('field')` with `@field_validator('field')` and `@classmethod`. CRITICAL: DO NOT use `mode='before'`; default `mode='after'` ensures `str_strip_whitespace=True` is executed prior to validation!\n"
                 f"     * Root/model validators: replace `@root_validator` with `@model_validator(mode='after')`. In Pydantic v2, `mode='after'` passes the instance `self` (NOT a dict!). Access fields directly via `self.items` and `self.discount_pct` (NOT `values.get(...)`!). Return `self`.\n"
                 f"       CRITICAL RECURSION GUARD: In `Order`, `validate_assignment=True` is active. Assigning `self.total_amount = ...` causes infinite RecursionError! You MUST use `object.__setattr__(self, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2))`.\n"
-                f"     * In `OrderService.apply_discount`: update `order.discount_pct = discount`, recalculate total using `object.__setattr__(order, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2))`, and return `order`.\n"
+                f"     * In `OrderService.apply_discount`: MUST assign `order.discount_pct = discount` directly (do NOT use `object.__setattr__` for discount_pct, so `validate_assignment=True` raises `ValidationError` on invalid discounts). Then recalculate total using `object.__setattr__(order, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2))`, and return `order`.\n"
                 f"     * Methods: replace `.parse_obj(payload)` with `.model_validate(payload)`, and `.dict(...)` with `.model_dump(...)`.\n"
                 f"   - For SQLAlchemy 2.0:\n"
                 f"     * Imports: MUST import `text`: `from sqlalchemy import ..., text` and `from sqlalchemy.orm import declarative_base`.\n"
@@ -650,7 +657,7 @@ def run_upgrade_pipeline(
                         "2. Replace class Config with model_config = ConfigDict(str_strip_whitespace=True, from_attributes=True, validate_assignment=True)\n"
                         "3. Use @field_validator('field') with @classmethod (do NOT use mode='before')\n"
                         "4. In Order, use @model_validator(mode='after') def compute_and_verify_total(self). Access self.items and self.discount_pct. Mutating self.total_amount directly causes infinite RecursionError because validate_assignment=True! You MUST use: object.__setattr__(self, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2)). Return self.\n"
-                        "5. In OrderService.apply_discount: order.discount_pct = discount, recalculate total with object.__setattr__(order, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2)), return order\n"
+                        "5. In OrderService.apply_discount: MUST assign order.discount_pct = discount directly (do NOT use object.__setattr__ for discount_pct, validate_assignment must guard bounds). Only use object.__setattr__(order, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2)) for total amount. Return order.\n"
                         "6. Replace parse_obj with model_validate, and dict with model_dump\n"
                     )
                 elif "sql" in demo_name.lower() or "alchemy" in demo_name.lower():
