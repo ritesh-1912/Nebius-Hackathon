@@ -15,6 +15,11 @@ class CostTracker:
             "super": TierCostSummary(tier="super"),
             "nano": TierCostSummary(tier="nano"),
         }
+        self.tavily_calls: int = 0
+
+    def record_tavily_call(self, count: int = 1) -> None:
+        """Record an execution of Tavily Search API."""
+        self.tavily_calls += count
 
     def calculate_cost(self, tier: str, prompt_tokens: int, completion_tokens: int) -> float:
         """Calculate USD cost for a specific token usage using configured pricing."""
@@ -64,7 +69,7 @@ class CostTracker:
         return self.record_usage(response.tier, response.usage)
 
     def get_summary(self) -> CostSummary:
-        """Return the cumulative summary across all tiers."""
+        """Return the cumulative summary across all tiers and external tools."""
         total_tokens = sum(t.total_tokens for t in self._tiers.values())
         total_cost = round(sum(t.cost_usd for t in self._tiers.values()), 6)
 
@@ -72,6 +77,7 @@ class CostTracker:
             tiers={k: v.model_copy() for k, v in self._tiers.items()},
             total_tokens=total_tokens,
             total_cost_usd=total_cost,
+            tavily_calls=self.tavily_calls,
         )
 
     def reset(self) -> None:
@@ -82,3 +88,4 @@ class CostTracker:
             tier.reasoning_tokens = 0
             tier.total_tokens = 0
             tier.cost_usd = 0.0
+        self.tavily_calls = 0

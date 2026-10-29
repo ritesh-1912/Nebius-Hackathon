@@ -98,12 +98,20 @@ def main():
         print(f"[ERROR calling Nano]: {e}")
 
     # 4. Tavily Search
-    print_banner("4. Testing Tavily Web Search")
+    print_banner("4. Testing Tavily Web Search (Real API Call)")
     tavily_query = "pydantic v2 migration guide .dict() replacement"
-    print(f"Query: {tavily_query}\n")
+    preferred_domains = ["docs.pydantic.dev", "pydantic.dev"]
+    print(f"Query: {tavily_query}")
+    print(f"Preferred Domains: {preferred_domains}\n")
     try:
-        tavily_resp = tavily.search(query=tavily_query, max_results=2)
-        print(f"Mode: {'Real Tavily API' if not tavily_resp.is_mock else 'Offline Cache'}")
+        tavily_resp = tavily.search(
+            query=tavily_query,
+            max_results=3,
+            include_domains=preferred_domains,
+        )
+        cost_tracker.record_tavily_call(1)
+        print(f"Status: SUCCESS (is_mock={tavily_resp.is_mock})")
+        print(f"Returned Results: {len(tavily_resp.results)}")
         if tavily_resp.raw_answer:
             print(f"Answer: {tavily_resp.raw_answer}\n")
         for i, item in enumerate(tavily_resp.results, start=1):
@@ -130,7 +138,8 @@ def main():
             f"${tier_data.cost_usd:<11.6f}"
         )
     print("-" * len(header))
-    print(f"{'OVERALL':<10} | {'':<14} | {'':<13} | {'':<10} | {summary.total_tokens:<8} | ${summary.total_cost_usd:<11.6f}\n")
+    print(f"{'OVERALL':<10} | {'':<14} | {'':<13} | {'':<10} | {summary.total_tokens:<8} | ${summary.total_cost_usd:<11.6f}")
+    print(f"Tavily Search API Calls: {summary.tavily_calls}\n")
     print("Smoke test finished successfully!")
 
 

@@ -36,11 +36,12 @@ class TierCostSummary(BaseModel):
 
 
 class CostSummary(BaseModel):
-    """Cumulative usage and cost across all model tiers."""
+    """Cumulative usage and cost across all model tiers and external tools."""
 
     tiers: Dict[str, TierCostSummary] = Field(default_factory=dict)
     total_tokens: int = 0
     total_cost_usd: float = 0.0
+    tavily_calls: int = 0
 
 
 class TavilySearchResultItem(BaseModel):

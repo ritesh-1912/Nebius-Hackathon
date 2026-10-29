@@ -37,9 +37,9 @@
 
 ## 3. Real Agent Loop Execution: All-Green Verification (Item 4)
 
-We executed `python -m upgrade_pilot.cli demo_sqlalchemy` directly on Nebius Token Factory live endpoints. The agent achieved **100% passing tests (8/8 green)** in Iteration 2.
+We executed `python -m upgrade_pilot.cli demo_sqlalchemy` directly on Nebius Token Factory live endpoints with real-time Tavily Search API grounding. The agent achieved **100% passing tests (8/8 green)** in Iteration 1.
 
-### Real Console Output (`task-332`)
+### Real Console Output (`task-639`)
 
 ```text
 ============================================================================
@@ -64,56 +64,43 @@ Token Budget:     60000 tokens max
 
 ✅ [PLANNING]                 Nemotron 3 Ultra generated the migration plan.
 
-   --- Migration Plan Preview ---
-   # SQLAlchemy 1.4 → 2.0 Migration Plan
-   
-   ## 1. Breaking API Changes Identified
-   
-   | Area | 1.4 Legacy API | 2.0 Replacement | Test Impact |
-   |------|----------------|-----------------|-------------|
-   | **Engine Execution** | `engine.execute(sql_string)` | `session.execute(text(sql))` or `conn.execute(text(sql))` | **test_05, test_06 FAIL** |
-   | **Declarative Base** | `sqlalchemy.ext.declarative.declarative_base` | `sqlalchemy.orm.declarative_base` | Warning only |
-   | **PK Lookup** | `session.query(Model).get(id)` | `session.get(Model, id)` | Warning (test_01, 02, 07) |
-   | **Query/Filter** | `session.query(Model).filter(...).all()` | `session.scalars(select(Model).where(...)).all()` | Warning (test_03, 08) |
+⚡ [RESEARCH]                 Querying Tavily Search API for 3 breaking change queries (preferred domains: docs.sqlalchemy.org, sqlalchemy.org)...
 
-⚡ [RESEARCH]                 Querying Tavily API for 3 breaking change documentation queries...
+✅ [RESEARCH]                 Tavily search complete (3 live API calls). Nemotron 3 Nano synthesized 9 migration rules.
 
-✅ [RESEARCH]                 Tavily search complete. Nemotron 3 Nano synthesized 6 migration rules.
-
-   --- Research Findings (6) ---
+   --- Research Findings (9) ---
    • sqlalchemy 2.0 migration guide engine.execute removed replacement
-     Rule: Migrate legacy `session.query(Model)`/`session.query(...).get(id)` to 2.0 Core‑style `session.scalars(select(Model).where(...)).all()` and `session.get(Model, id)`, and replace raw engine string execution with `connection.execute(text('…'))`.
-     Source: https://docs.sqlalchemy.org/en/20/changelog/migration_20.html
+     Rule: Replace all `engine.execute()` calls with `connection.execute()` (or `Session.execute()`) and supply per‑statement options via the `Connection.execute.execution_options` dictionary instead of positional `args`/`kwargs`.
+     Source: http://docs.sqlalchemy.org/en/latest/changelog/migration_20.html
    • sqlalchemy 2.0 migration guide engine.execute removed replacement
-     Rule: Replace any `declarative_base()` call with a class that inherits from `sqlalchemy.orm.DeclarativeBase`, e.g., `class Base(DeclarativeBase): pass`.
-     Source: https://docs.sqlalchemy.org/en/20/orm/quickstart.html
+     Rule: When moving to SQLAlchemy 2.1, replace all legacy ORM execution calls with `session.execute(statement, params=None, **execution_options)`.
+     Source: http://docs.sqlalchemy.org/en/latest/orm/session_api.html
+   • sqlalchemy 2.0 migration guide session.get legacy query.get
+     Rule: Migrate all uses of `session.query(Model).get(id)` to the new `session.get(Model, id)` syntax.
+     Source: http://docs.sqlalchemy.org/en/latest/changelog/migration_20.html
+   • sqlalchemy 2.0 migration guide session.get legacy query.get
+     Rule: Replace every call to the legacy `Query.get()` method with `Session.get()` to use the non‑deprecated, 2.x‑compatible API.
+     Source: http://docs.sqlalchemy.org/en/latest/orm/queryguide/query.html
 
 ⚡ [PATCHING] (Iter 1/5)      [Iteration 1/5] Nemotron 3 Super is generating code patches...
 
-✅ [PATCHING] (Iter 1/5)      Applied 9 patch edits.
+✅ [PATCHING] (Iter 1/5)      Applied 3 patch edits.
+   --- Applied Patches (3) ---
+   • File: task_service.py
+   • File: task_service.py
+   • File: task_service.py
 
 ⚡ [VERIFYING] (Iter 1/5)     [Iteration 1/5] Running sandbox pytest suite...
 
-❌ [VERIFYING] (Iter 1/5)     Test run completed: 7 passed, 2 failed of 9.
-   Outcome: 7 passed, 2 failed of 9
-   --- Error Details Preview ---
-     E   AttributeError: 'Session' object has no attribute 'execute_raw_sql'
-
-⚡ [PATCHING] (Iter 2/5)      [Iteration 2/5] Nemotron 3 Super is generating code patches...
-
-✅ [PATCHING] (Iter 2/5)      Applied 1 patch edits.
-
-⚡ [VERIFYING] (Iter 2/5)     [Iteration 2/5] Running sandbox pytest suite...
-
-✅ [VERIFYING] (Iter 2/5)     Test run completed: 8 passed, 0 failed out of 8.
+✅ [VERIFYING] (Iter 1/5)     Test run completed: 8 passed, 0 failed out of 8.
    Outcome: 8 passed, 0 failed of 8
 
 ⚡ [REVIEW]                   Nemotron 3 Ultra is reviewing the final diff and generating the PR summary...
 
-✅ [COMPLETED]                Migration succeeded in 2 iteration(s). Final tests: 8/8 passed.
+✅ [COMPLETED]                Migration succeeded in 1 iteration(s). Final tests: 8/8 passed.
 ```
 
-### Real Cost & Token Telemetry (`task-332`)
+### Real Cost & Token Telemetry (`task-639`)
 
 ```text
 ============================================================================
@@ -122,11 +109,11 @@ Token Budget:     60000 tokens max
 ----------------------------------------------------------------------------
 MODEL TIER   | PROMPT     | COMPL      | REASONING  | TOTAL    | EST. COST ($)
 ----------------------------------------------------------------------------
-ULTRA        | 3851       | 3219       | 198        | 7070     | $0.027016   
-SUPER        | 9356       | 7128       | 5770       | 16484    | $0.018444   
-NANO         | 663        | 927        | 0          | 1590     | $0.000252   
+ULTRA        | 3212       | 2500       | 447        | 5712     | $0.021424   
+SUPER        | 4269       | 2214       | 1638       | 6483     | $0.006547   
+NANO         | 2747       | 1521       | 0          | 4268     | $0.000579   
 ----------------------------------------------------------------------------
-OVERALL      |            |            |            | 25144    | $0.045712   
+OVERALL      |            |            |            | 16463    | $0.028550   
 ----------------------------------------------------------------------------
 ```
 

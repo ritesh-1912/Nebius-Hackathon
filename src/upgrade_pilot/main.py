@@ -72,6 +72,20 @@ STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
+@app.on_event("startup")
+def startup_checks():
+    """Startup verification logging for API keys and service integrations."""
+    has_tavily = bool(settings.TAVILY_API_KEY and not settings.TAVILY_API_KEY.startswith("your_"))
+    key_preview = f"{settings.TAVILY_API_KEY[:6]}...{settings.TAVILY_API_KEY[-4:]}" if has_tavily else "NOT CONFIGURED"
+    if has_tavily:
+        logger.info(f"✓ Startup check: TAVILY_API_KEY is present and active (Key: {key_preview}). Real-time research enabled.")
+    else:
+        logger.warning("⚠️ Startup check: TAVILY_API_KEY is missing. Agent will operate with 'no external docs available' fallback.")
+
+    has_nebius = bool(settings.NEBIUS_API_KEY and not settings.NEBIUS_API_KEY.startswith("your_"))
+    logger.info(f"Startup check: NEBIUS_API_KEY present: {has_nebius} (Base URL: {settings.NEBIUS_BASE_URL})")
+
+
 @app.get("/")
 def get_index():
     """Serve the single-page frontend."""
@@ -96,6 +110,7 @@ def health_check():
         "max_concurrent_runs": settings.MAX_CONCURRENT_RUNS,
         "per_run_timeout_seconds": settings.PER_RUN_TIMEOUT_SECONDS,
         "allowed_demos": ["demo_pydantic", "demo_sqlalchemy"],
+        "tavily_key_present": bool(settings.TAVILY_API_KEY and not settings.TAVILY_API_KEY.startswith("your_")),
         "budget_telemetry": budget_limiter.get_status(),
         "cached_runs_available": {
             "demo_pydantic": is_cached_available("demo_pydantic"),

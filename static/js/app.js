@@ -157,6 +157,13 @@ function updateTelemetry(cum) {
     document.getElementById("costNano").innerText = `$${tiers.nano.cost_usd.toFixed(6)}`;
     document.getElementById("tokensNano").innerText = tiers.nano.total_tokens.toLocaleString();
   }
+
+  if (cum.tavily_calls !== undefined) {
+    const el = document.getElementById("tavilyCallsCount");
+    if (el) el.innerText = cum.tavily_calls;
+    const qEl = document.getElementById("tavilyQueriesCount");
+    if (qEl) qEl.innerText = cum.tavily_calls;
+  }
 }
 
 // Update Test Progress Bar
@@ -264,16 +271,30 @@ function renderTimelineCard(event) {
   // 3. Research Findings Payload
   if (event.step === "RESEARCH" && event.payload && event.payload.research_findings) {
     const items = event.payload.research_findings;
-    const itemsHtml = items.map(item => `
-      <div class="p-2.5 rounded-lg bg-slate-900/60 border border-white/5 space-y-1">
-        <div class="text-[11px] font-bold text-sky-400">🔍 ${escapeHtml(item.query)}</div>
-        <div class="text-xs text-gray-300">${escapeHtml(item.note)}</div>
-        <a href="${item.source_url}" target="_blank" rel="noopener noreferrer" class="text-[10px] text-sky-400 hover:underline inline-flex items-center space-x-1">
-          <span>Source: ${escapeHtml(item.source_url)}</span> ↗
-        </a>
-      </div>
-    `).join("");
-    bodyHtml = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">${itemsHtml}</div>`;
+    const itemsHtml = items.map(item => {
+      const isFailed = item.note.includes("[no external docs available]") || !item.source_url;
+      return `
+        <div class="p-3 rounded-lg ${isFailed ? 'bg-amber-950/20 border-amber-500/30' : 'bg-slate-900/70 border-white/10'} border space-y-1.5 shadow-sm">
+          <div class="text-[11px] font-bold text-sky-400 flex items-center justify-between">
+            <span class="truncate max-w-[80%]">🔍 Query: "${escapeHtml(item.query)}"</span>
+            ${isFailed ? '<span class="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 shrink-0">No Docs</span>' : '<span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 shrink-0">Live Tavily</span>'}
+          </div>
+          <div class="text-xs text-gray-200 leading-relaxed font-sans">${escapeHtml(item.note)}</div>
+          ${item.source_url ? `
+            <div class="pt-1.5 border-t border-white/5 flex items-center justify-between text-[11px]">
+              <span class="text-gray-400 truncate max-w-[65%]" title="${escapeHtml(item.title || item.source_url)}">📄 ${escapeHtml(item.title || item.source_url)}</span>
+              <a href="${item.source_url}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 hover:underline inline-flex items-center space-x-1 shrink-0 font-mono text-[10px]">
+                <span>Source Docs</span>
+                <span>↗</span>
+              </a>
+            </div>
+          ` : `
+            <div class="text-[10px] text-amber-400/80 font-mono italic">⚠️ No external source URL available</div>
+          `}
+        </div>
+      `;
+    }).join("");
+    bodyHtml = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">${itemsHtml}</div>`;
   }
 
   // 4. Patches Payload
@@ -408,6 +429,11 @@ function resetState() {
   document.getElementById("reasoningSuper").innerText = "0";
   document.getElementById("costNano").innerText = "$0.000000";
   document.getElementById("tokensNano").innerText = "0";
+
+  const tavCalls = document.getElementById("tavilyCallsCount");
+  if (tavCalls) tavCalls.innerText = "0";
+  const tavQueries = document.getElementById("tavilyQueriesCount");
+  if (tavQueries) tavQueries.innerText = "0";
 
   document.getElementById("testProgressBar").style.width = "0%";
   document.getElementById("testRatioLabel").innerText = "0 / 0 Tests Passing";

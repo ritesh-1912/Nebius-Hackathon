@@ -27,7 +27,7 @@ from upgrade_pilot.models import (
     TestSummaryPayload,
 )
 from upgrade_pilot.orchestrator.events import create_event
-from upgrade_pilot.research.tavily_client import TavilySearchClient
+from upgrade_pilot.research.tavily_client import TavilySearchClient, TavilySearchError
 from upgrade_pilot.sandbox.patcher import SandboxPatcher
 from upgrade_pilot.sandbox.runner import SandboxEnvironment
 
@@ -153,27 +153,38 @@ def parse_structured_edits(raw_text: str, default_file: Optional[str] = None) ->
     raise ValueError("Could not parse structured edits from model output.")
 
 
+def get_preferred_domains(demo_id: str) -> Optional[List[str]]:
+    """Return preferred official documentation domains for the dependency being upgraded."""
+    d = demo_id.lower()
+    if "pydantic" in d:
+        return ["docs.pydantic.dev", "pydantic.dev"]
+    elif "sql" in d or "alchemy" in d:
+        return ["docs.sqlalchemy.org", "sqlalchemy.org"]
+    return None
+
+
 def generate_targeted_queries(demo_id: str, error_text: str, plan_text: str) -> List[str]:
     """Generate 2 to 4 targeted documentation search queries based on errors and plan."""
     queries: List[str] = []
     err_lower = error_text.lower()
+    plan_lower = plan_text.lower()
     demo_lower = demo_id.lower()
 
     if "pydantic" in demo_lower:
-        if "regex" in err_lower or "pattern" in err_lower:
+        if "regex" in err_lower or "pattern" in err_lower or "regex" in plan_lower:
             queries.append("pydantic v2 migration guide regex pattern Field replacement")
-        if "dict" in err_lower or "model_dump" in err_lower:
+        if "dict" in err_lower or "model_dump" in err_lower or "model_dump" in plan_lower:
             queries.append("pydantic v2 migration guide .dict() to .model_dump()")
         if "parse_obj" in err_lower or "model_validate" in err_lower:
             queries.append("pydantic v2 migration guide parse_obj to model_validate")
-        if "validator" in err_lower:
+        if "validator" in err_lower or "field_validator" in plan_lower:
             queries.append("pydantic v2 migration guide @validator to @field_validator")
         if len(queries) < 2:
             queries.append("pydantic v2 migration guide breaking changes ConfigDict")
     elif "sql" in demo_lower or "alchemy" in demo_lower:
-        if "execute" in err_lower:
+        if "execute" in err_lower or "raw_sql" in err_lower or "execute" in plan_lower:
             queries.append("sqlalchemy 2.0 migration guide engine.execute removed replacement")
-        if "query" in err_lower or "scalars" in err_lower:
+        if "query" in err_lower or "scalars" in err_lower or "scalars" in plan_lower:
             queries.append("sqlalchemy 2.0 migration guide session.query select scalars")
         if "get" in err_lower:
             queries.append("sqlalchemy 2.0 migration guide session.get legacy query.get")
@@ -183,7 +194,12 @@ def generate_targeted_queries(demo_id: str, error_text: str, plan_text: str) -> 
         queries.append(f"{demo_id} migration guide breaking changes")
         queries.append(f"{demo_id} upgrade errors troubleshooting")
 
-    return queries[:4]
+    # Enforce 2 to 4 queries
+    unique_queries: List[str] = []
+    for q in queries:
+        if q not in unique_queries:
+            unique_queries.append(q)
+    return unique_queries[:4]
 
 
 def run_upgrade_pipeline(
@@ -331,43 +347,91 @@ def run_upgrade_pipeline(
         # STEP 3: Tavily Grounding & Nemotron 3 Nano Summarization
         # ---------------------------------------------------------------------
         queries = generate_targeted_queries(demo_name, baseline_res.error_text, plan_markdown)
+        include_domains = get_preferred_domains(demo_name)
+        domain_label = f" (preferred domains: {', '.join(include_domains)})" if include_domains else ""
         yield create_event(
             run_id=run_id,
             demo_id=demo_name,
             step="RESEARCH",
             status="running",
-            message=f"Querying Tavily API for {len(queries)} breaking change documentation queries...",
+            message=f"Querying Tavily Search API for {len(queries)} breaking change queries{domain_label}...",
             cost_tracker=cost_tracker,
         )
 
         research_items: List[ResearchItem] = []
+        tavily_errors: List[str] = []
+
         for q in queries:
-            tav_res = tavily.search(query=q, max_results=2)
-            for item in tav_res.results:
-                nano_prompt = (
-                    f"Summarize this documentation snippet into a 1-sentence migration rule for Python developers:\n\n"
-                    f"Snippet:\n{item.content[:800]}"
+            try:
+                tav_res = tavily.search(
+                    query=q,
+                    max_results=3,
+                    include_domains=include_domains,
                 )
-                resp_nano = nebius.call_nano(
-                    prompt=nano_prompt,
-                    system_prompt="You are Nemotron 3 Nano, an ultra-fast summarizer of technical documentation.",
-                    max_tokens=250,
-                )
+                cost_tracker.record_tavily_call(1)
+
+                if not tav_res.results:
+                    research_items.append(
+                        ResearchItem(
+                            query=q,
+                            source_url="",
+                            title="No Results",
+                            note="[no external docs available] Tavily returned 0 results for this query.",
+                        )
+                    )
+                    continue
+
+                for item in tav_res.results:
+                    nano_prompt = (
+                        f"Summarize this documentation snippet into a 1-sentence actionable migration rule for Python developers:\n\n"
+                        f"Title: {item.title}\n"
+                        f"URL: {item.url}\n"
+                        f"Snippet:\n{item.content[:1000]}"
+                    )
+                    resp_nano = nebius.call_nano(
+                        prompt=nano_prompt,
+                        system_prompt="You are Nemotron 3 Nano, an ultra-fast summarizer of technical documentation.",
+                        max_tokens=250,
+                    )
+                    research_items.append(
+                        ResearchItem(
+                            query=q,
+                            source_url=item.url,
+                            title=item.title,
+                            note=resp_nano.text.strip(),
+                        )
+                    )
+            except Exception as e:
+                logger.warning(f"Tavily search API failed for query '{q}': {e}")
+                tavily_errors.append(f"{q}: {e}")
                 research_items.append(
                     ResearchItem(
                         query=q,
-                        source_url=item.url,
-                        title=item.title,
-                        note=resp_nano.text.strip(),
+                        source_url="",
+                        title="Tavily Search Failed",
+                        note=f"[no external docs available] Live Tavily search error: {e}",
                     )
                 )
+
+        if tavily_errors:
+            research_status = "warning"
+            research_message = (
+                f"Tavily search encountered {len(tavily_errors)} error(s). "
+                f"Continuing with [no external docs available] notice."
+            )
+        else:
+            research_status = "success"
+            research_message = (
+                f"Tavily search complete ({len(queries)} live API calls). "
+                f"Nemotron 3 Nano synthesized {len(research_items)} migration rules."
+            )
 
         yield create_event(
             run_id=run_id,
             demo_id=demo_name,
             step="RESEARCH",
-            status="success",
-            message=f"Tavily search complete. Nemotron 3 Nano synthesized {len(research_items)} migration rules.",
+            status=research_status,
+            message=research_message,
             payload=EventPayload(research_findings=research_items),
             cost_tracker=cost_tracker,
         )
@@ -381,7 +445,8 @@ def run_upgrade_pipeline(
         last_test_res = baseline_res
 
         notes_str = "\n".join(
-            f"- [{r.title or r.query}]({r.source_url}): {r.note}" for r in research_items
+            f"- [{r.title or r.query}]({r.source_url}): {r.note}" if r.source_url else f"- {r.title or r.query}: {r.note}"
+            for r in research_items
         )
 
         while iteration < max_iterations:
@@ -597,7 +662,11 @@ def run_upgrade_pipeline(
             cost_tracker=cost_tracker,
         )
 
-        sources_formatted = "\n".join(f"- {r.title}: {r.source_url}" for r in research_items)
+        valid_sources = [r for r in research_items if r.source_url]
+        if valid_sources:
+            sources_formatted = "\n".join(f"- {r.title}: {r.source_url}" for r in valid_sources)
+        else:
+            sources_formatted = "No external documentation sources used (offline or unavailable)."
 
         review_prompt = (
             f"You are Nemotron 3 Ultra, a principal software engineer and tech lead.\n\n"
