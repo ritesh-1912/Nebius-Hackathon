@@ -7,11 +7,18 @@ let eventSource = null;
 let eventCount = 0;
 let lastDiff = "";
 let lastPrSummary = "";
+let lastTestSummary = null;
 
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
   fetchPricing();
   fetchDemos();
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("autoplay") === "cached") {
+    setTimeout(() => {
+      startUpgrade(true);
+    }, 300);
+  }
 });
 
 // Fetch backend pricing reference
@@ -47,15 +54,27 @@ function selectDemo(demoId) {
   const checkSql = document.getElementById("check-demo_sqlalchemy");
 
   if (demoId === "demo_pydantic") {
-    cardPyd.className = "cursor-pointer glass-panel-glow border-2 border-nvidia p-5 rounded-xl transition duration-200 hover:scale-[1.01] relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-emerald-950/20";
-    cardSql.className = "cursor-pointer glass-panel border border-white/10 p-5 rounded-xl transition duration-200 hover:scale-[1.01] hover:border-white/30 relative overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950";
+    cardPyd.className = "cursor-pointer glass-panel-glow border-2 border-nvidia p-5 rounded-xl transition duration-200 hover:scale-[1.01] relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-emerald-950/20 focus-ring";
+    cardPyd.setAttribute("aria-checked", "true");
+    cardSql.className = "cursor-pointer glass-panel border border-white/10 p-5 rounded-xl transition duration-200 hover:scale-[1.01] hover:border-white/30 relative overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950 focus-ring";
+    cardSql.setAttribute("aria-checked", "false");
     checkPyd.classList.remove("hidden");
     checkSql.classList.add("hidden");
   } else {
-    cardSql.className = "cursor-pointer glass-panel-glow border-2 border-blue-400 p-5 rounded-xl transition duration-200 hover:scale-[1.01] relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-blue-950/20";
-    cardPyd.className = "cursor-pointer glass-panel border border-white/10 p-5 rounded-xl transition duration-200 hover:scale-[1.01] hover:border-white/30 relative overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950";
+    cardSql.className = "cursor-pointer glass-panel-glow border-2 border-blue-400 p-5 rounded-xl transition duration-200 hover:scale-[1.01] relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-blue-950/20 focus-ring";
+    cardSql.setAttribute("aria-checked", "true");
+    cardPyd.className = "cursor-pointer glass-panel border border-white/10 p-5 rounded-xl transition duration-200 hover:scale-[1.01] hover:border-white/30 relative overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950 focus-ring";
+    cardPyd.setAttribute("aria-checked", "false");
     checkSql.classList.remove("hidden");
     checkPyd.classList.add("hidden");
+  }
+}
+
+// Keyboard navigation for demo cards
+function handleDemoKey(event, demoId) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    selectDemo(demoId);
   }
 }
 
@@ -130,6 +149,11 @@ function handleAgentEvent(event) {
     if (banner) banner.classList.remove("hidden");
   }
 
+  // Update Status in Navbar
+  if (event.status === "running") {
+    updateStatus(`Running: ${event.step}${event.iteration > 0 ? ` (Iter ${event.iteration})` : ""}`, "running");
+  }
+
   // Update Telemetry Panel
   if (event.telemetry && event.telemetry.cumulative) {
     updateTelemetry(event.telemetry.cumulative);
@@ -137,6 +161,7 @@ function handleAgentEvent(event) {
 
   // Update Test Progress Bar
   if (event.payload && event.payload.test_summary) {
+    lastTestSummary = event.payload.test_summary;
     updateTestProgress(event.payload.test_summary, event.iteration);
   }
 
@@ -200,6 +225,11 @@ function updateTestProgress(ts, iteration) {
   const bar = document.getElementById("testProgressBar");
   bar.style.width = `${pct}%`;
 
+  const container = document.getElementById("testProgressContainer");
+  if (container) {
+    container.setAttribute("aria-valuenow", pct.toString());
+  }
+
   if (pct === 100) {
     bar.className = "h-full bg-nvidia rounded-full transition-all duration-500 shadow-md shadow-nvidia/50";
   } else if (pct > 50) {
@@ -231,7 +261,7 @@ function renderTimelineCard(event) {
     stepIcon = "🧠";
     tierBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 font-mono">Nemotron 3 Ultra</span>`;
   } else if (event.step === "RESEARCH") {
-    borderColor = "border-l-nebius";
+    borderColor = "border-l-sky-400";
     stepIcon = "🌐";
     tierBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-sky-500/20 text-sky-300 font-mono">Tavily + Nemotron 3 Nano</span>`;
   } else if (event.step === "PATCHING") {
@@ -248,6 +278,9 @@ function renderTimelineCard(event) {
   }
 
   card.classList.add(borderColor);
+  if (event.status === "running") {
+    card.classList.add("active-running-card");
+  }
 
   const headerHtml = `
     <div class="flex items-center justify-between">
@@ -256,97 +289,106 @@ function renderTimelineCard(event) {
         <span class="font-bold text-sm text-white">${event.step}${event.iteration > 0 ? ` (Iter ${event.iteration})` : ""}</span>
         ${tierBadge}
       </div>
-      <span class="text-[11px] font-mono text-gray-500">${new Date(event.timestamp).toLocaleTimeString()}</span>
+      <span class="text-[11px] font-mono text-gray-400">${new Date(event.timestamp).toLocaleTimeString()}</span>
     </div>
-    <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">${escapeHtml(event.message)}</p>
   `;
 
-  let bodyHtml = "";
+  // Status message
+  const statusColor = event.status === "error" ? "text-rose-400" : (event.status === "success" ? "text-emerald-400" : "text-gray-200");
+  const messageHtml = `<p class="text-xs sm:text-sm ${statusColor} leading-relaxed">${escapeHtml(event.message)}</p>`;
 
-  // 1. Baseline Failures Payload
-  if (event.step === "BASELINE_TEST" && event.payload && event.payload.test_summary) {
+  let payloadHtml = "";
+
+  // Payload: Test Summary details
+  if (event.payload && event.payload.test_summary) {
     const ts = event.payload.test_summary;
-    bodyHtml = `
-      <div class="p-3 rounded-lg bg-red-950/20 border border-red-500/20 text-xs font-mono text-red-300 space-y-1">
-        <div class="font-bold text-red-400">Baseline Pytest Failures Detected:</div>
-        <div>Passed: ${ts.passed} | Failed: ${ts.failed} of ${ts.total} tests</div>
-        ${ts.output_tail ? `<pre class="mt-2 p-2 rounded bg-black/40 text-[11px] text-gray-300 overflow-x-auto whitespace-pre-wrap">${escapeHtml(ts.output_tail.slice(0, 450))}</pre>` : ""}
-      </div>
-    `;
-  }
-
-  // 2. Planning Payload
-  if (event.step === "PLANNING" && event.payload && event.payload.plan_markdown) {
-    const rendered = marked.parse(event.payload.plan_markdown);
-    bodyHtml = `
-      <details class="cursor-pointer group">
-        <summary class="text-xs font-semibold text-purple-300 hover:text-purple-200 select-none flex items-center space-x-1">
-          <span>▶ View Architectural Migration Plan</span>
-        </summary>
-        <div class="mt-3 p-4 rounded-xl bg-slate-900/80 border border-purple-500/20 markdown-body text-xs leading-relaxed max-h-72 overflow-y-auto">
-          ${rendered}
+    const testPct = ts.total > 0 ? Math.round((ts.passed / ts.total) * 100) : 0;
+    payloadHtml += `
+      <div class="p-3 rounded-lg bg-slate-950/70 border border-white/5 space-y-1.5 text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-gray-300 font-semibold">Pytest Results:</span>
+          <span class="${ts.passed === ts.total && ts.total > 0 ? 'text-nvidia' : 'text-amber-400'} font-bold">
+            ${ts.passed} passed, ${ts.failed} failed (${testPct}%)
+          </span>
         </div>
-      </details>
-    `;
-  }
-
-  // 3. Research Findings Payload
-  if (event.step === "RESEARCH" && event.payload && event.payload.research_findings) {
-    const items = event.payload.research_findings;
-    const itemsHtml = items.map(item => {
-      const isFailed = item.note.includes("[no external docs available]") || !item.source_url;
-      return `
-        <div class="p-3 rounded-lg ${isFailed ? 'bg-amber-950/20 border-amber-500/30' : 'bg-slate-900/70 border-white/10'} border space-y-1.5 shadow-sm">
-          <div class="text-[11px] font-bold text-sky-400 flex items-center justify-between">
-            <span class="truncate max-w-[80%]">🔍 Query: "${escapeHtml(item.query)}"</span>
-            ${isFailed ? '<span class="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 shrink-0">No Docs</span>' : '<span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 shrink-0">Live Tavily</span>'}
+        ${ts.failed_test_names && ts.failed_test_names.length > 0 ? `
+          <div class="text-[11px] text-rose-300 space-y-0.5 mt-1">
+            ${ts.failed_test_names.slice(0, 4).map(t => `<div>• ❌ ${escapeHtml(t)}</div>`).join("")}
+            ${ts.failed_test_names.length > 4 ? `<div>... and ${ts.failed_test_names.length - 4} more</div>` : ""}
           </div>
-          <div class="text-xs text-gray-200 leading-relaxed font-sans">${escapeHtml(item.note)}</div>
-          ${item.source_url ? `
-            <div class="pt-1.5 border-t border-white/5 flex items-center justify-between text-[11px]">
-              <span class="text-gray-400 truncate max-w-[65%]" title="${escapeHtml(item.title || item.source_url)}">📄 ${escapeHtml(item.title || item.source_url)}</span>
-              <a href="${item.source_url}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 hover:underline inline-flex items-center space-x-1 shrink-0 font-mono text-[10px]">
-                <span>Source Docs</span>
-                <span>↗</span>
-              </a>
-            </div>
-          ` : `
-            <div class="text-[10px] text-amber-400/80 font-mono italic">⚠️ No external source URL available</div>
-          `}
-        </div>
-      `;
-    }).join("");
-    bodyHtml = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">${itemsHtml}</div>`;
-  }
-
-  // 4. Patches Payload
-  if (event.step === "PATCHING" && event.payload && event.payload.diff) {
-    const diffLines = formatDiffHtml(event.payload.diff);
-    bodyHtml = `
-      <details class="cursor-pointer group">
-        <summary class="text-xs font-semibold text-nvidia hover:text-lime-300 select-none">
-          <span>▶ Inspect Patch Diff</span>
-        </summary>
-        <div class="mt-2 diff-container p-3 max-h-60 overflow-y-auto">${diffLines}</div>
-      </details>
-    `;
-  }
-
-  // 5. Verification Payload
-  if (event.step === "VERIFYING" && event.payload && event.payload.test_summary) {
-    const ts = event.payload.test_summary;
-    const isGreen = ts.failed === 0 && ts.passed > 0;
-    bodyHtml = `
-      <div class="p-2.5 rounded-lg ${isGreen ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 'bg-amber-950/30 border-amber-500/30 text-amber-300'} border text-xs font-mono flex items-center justify-between">
-        <span>Pytest Run: ${ts.passed} passed, ${ts.failed} failed of ${ts.total} total</span>
-        <span class="font-bold">${isGreen ? '✅ ALL GREEN' : '⚠️ REMAINING FAILURES'}</span>
+        ` : ""}
+        ${ts.output_tail ? `
+          <pre class="p-2 rounded bg-black/50 text-[11px] text-gray-400 overflow-x-auto max-h-32 mt-1 whitespace-pre-wrap">${escapeHtml(ts.output_tail)}</pre>
+        ` : ""}
       </div>
     `;
   }
 
-  card.innerHTML = headerHtml + bodyHtml;
-  container.appendChild(card);
-  card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  // Payload: Migration Plan preview
+  if (event.payload && event.payload.plan_markdown) {
+    payloadHtml += `
+      <div class="p-4 rounded-lg bg-slate-950/80 border border-white/10 markdown-body text-xs max-h-64 overflow-y-auto">
+        ${marked.parse(event.payload.plan_markdown)}
+      </div>
+    `;
+  }
+
+  // Payload: Research findings with Tavily source links
+  if (event.payload && event.payload.research_findings && event.payload.research_findings.length > 0) {
+    payloadHtml += `
+      <div class="space-y-2 mt-2">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-sky-400 flex items-center justify-between">
+          <span>Tavily Live Grounding & Nano Synthesized Rules</span>
+          <span class="text-gray-400 font-mono text-[10px]">${event.payload.research_findings.length} rules</span>
+        </div>
+        <div class="space-y-1.5">
+          ${event.payload.research_findings.map(rf => `
+            <div class="p-2.5 rounded-lg bg-slate-950/70 border border-sky-500/20 text-xs space-y-1">
+              <div class="text-sky-300 font-semibold text-[11px] flex items-center space-x-1">
+                <span>🔎</span>
+                <span>${escapeHtml(rf.query || "Documentation Query")}</span>
+              </div>
+              <p class="text-gray-200 text-[11px] leading-relaxed">${escapeHtml(rf.summary || rf.rule)}</p>
+              ${rf.source_url ? `
+                <a href="${escapeHtml(rf.source_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1 text-[11px] text-sky-400 hover:text-sky-300 hover:underline">
+                  <span>🔗</span>
+                  <span>${escapeHtml(rf.source_title || rf.source_url)}</span>
+                </a>
+              ` : ""}
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  // Payload: Structured Edits
+  if (event.payload && event.payload.structured_edits && event.payload.structured_edits.length > 0) {
+    payloadHtml += `
+      <div class="space-y-1 text-xs">
+        <div class="text-[11px] font-semibold text-gray-300">Targeted Code Modifications:</div>
+        <div class="flex flex-wrap gap-1.5">
+          ${event.payload.structured_edits.map(se => `
+            <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[11px] text-gray-300">
+              ${escapeHtml(se.file)} (${escapeHtml(se.explanation || "AST edit")})
+            </span>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  // Payload: Unified Diff preview
+  if (event.payload && event.payload.diff) {
+    payloadHtml += `
+      <div class="diff-container p-3 max-h-48 overflow-y-auto">
+        ${formatDiffHtml(event.payload.diff)}
+      </div>
+    `;
+  }
+
+  card.innerHTML = headerHtml + messageHtml + payloadHtml;
+  container.prepend(card);
 }
 
 // Show Final Screen
@@ -360,7 +402,7 @@ function showFinalResults() {
     diffContainer.innerHTML = formatDiffHtml(lastDiff);
     document.getElementById("finalDiffText").value = lastDiff;
   } else {
-    diffContainer.innerHTML = `<span class="text-gray-500">No diff generated.</span>`;
+    diffContainer.innerHTML = `<span class="text-gray-400">No diff generated.</span>`;
   }
 
   // Render PR Summary
@@ -369,10 +411,60 @@ function showFinalResults() {
     prContainer.innerHTML = marked.parse(lastPrSummary);
     document.getElementById("prSummaryMarkdown").value = lastPrSummary;
   } else {
-    prContainer.innerHTML = `<span class="text-gray-500">No PR summary generated.</span>`;
+    prContainer.innerHTML = `<span class="text-gray-400">No PR summary generated.</span>`;
+  }
+
+  // Update Test Badge
+  const badge = document.getElementById("finalTestBadge");
+  if (badge && lastTestSummary) {
+    const isFullPass = lastTestSummary.passed === lastTestSummary.total && lastTestSummary.total > 0;
+    badge.innerText = `${lastTestSummary.passed}/${lastTestSummary.total} Tests Passing`;
+    if (isFullPass) {
+      badge.className = "text-xs px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+    } else {
+      badge.className = "text-xs px-2 py-0.5 rounded font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30";
+    }
   }
 
   section.scrollIntoView({ behavior: "smooth" });
+}
+
+// Switch between PR summary and Unified diff tabs in the final results
+function switchResultTab(tabName) {
+  const prContent = document.getElementById("tabPrContent");
+  const diffContent = document.getElementById("tabDiffContent");
+  const prBtn = document.getElementById("tabPrSummaryBtn");
+  const diffBtn = document.getElementById("tabDiffBtn");
+
+  if (tabName === "pr") {
+    prContent.classList.remove("hidden");
+    diffContent.classList.add("hidden");
+    prBtn.className = "tab-btn active px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium flex items-center space-x-1.5 focus-ring";
+    diffBtn.className = "tab-btn px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium text-gray-400 hover:text-white flex items-center space-x-1.5 focus-ring";
+  } else {
+    diffContent.classList.remove("hidden");
+    prContent.classList.add("hidden");
+    diffBtn.className = "tab-btn active px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium flex items-center space-x-1.5 focus-ring";
+    prBtn.className = "tab-btn px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium text-gray-400 hover:text-white flex items-center space-x-1.5 focus-ring";
+  }
+}
+
+// Download patch as a .diff file
+function downloadPatchFile() {
+  if (!lastDiff) {
+    showToast("No diff available to download");
+    return;
+  }
+  const blob = new Blob([lastDiff], { type: "text/x-diff;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${selectedDemo}_upgrade_patch.diff`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Downloaded patch file!");
 }
 
 // Format Diff HTML
@@ -485,13 +577,27 @@ function resetState() {
   updateStatus("System Ready", "ready");
 }
 
-// Clipboard Copy Helper
-function copyToClipboard(elementId, label) {
+// Clipboard Copy Helper with Visual Feedback on Button
+function copyToClipboard(elementId, label, btnId) {
   const el = document.getElementById(elementId);
-  if (!el || !el.value) return;
+  if (!el || !el.value) {
+    showToast(`Nothing to copy for ${label}`);
+    return;
+  }
 
   navigator.clipboard.writeText(el.value).then(() => {
     showToast(`Copied ${label} to clipboard!`);
+    if (btnId) {
+      const btn = document.getElementById(btnId);
+      const textSpan = document.getElementById(`${btnId}Text`);
+      if (textSpan) {
+        const originalText = textSpan.innerText;
+        textSpan.innerText = "Copied! ✓";
+        setTimeout(() => {
+          textSpan.innerText = originalText;
+        }, 2000);
+      }
+    }
   }).catch(err => {
     console.error("Clipboard write error:", err);
   });

@@ -26,13 +26,44 @@ code, pre, .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Glassmorphism Cards */
-.glass-panel {
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-card);
-  border-radius: 1rem;
+/* Accessibility & Focus Rings */
+:focus-visible {
+  outline: 2px solid var(--accent-nvidia);
+  outline-offset: 2px;
+}
+
+.focus-ring {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-nvidia);
+}
+
+/* Active running card highlight */
+.active-running-card {
+  border-left-width: 4px;
+  animation: cardPulse 2s infinite ease-in-out;
+}
+
+@keyframes cardPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(118, 185, 0, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(118, 185, 0, 0.35);
+  }
+}
+
+/* Deliverable Tabs */
+.tab-btn {
+  transition: all 0.2s ease;
+}
+.tab-btn.active {
+  background: rgba(118, 185, 0, 0.15);
+  color: #76b900;
+  border-color: rgba(118, 185, 0, 0.4);
+  font-weight: 700;
 }
 
 .glass-panel-glow {

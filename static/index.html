@@ -26,110 +26,179 @@
     }
   </script>
 </head>
-<body class="bg-darkbg text-gray-100 flex flex-col min-h-screen">
+<body class="bg-darkbg text-gray-100 flex flex-col min-h-screen selection:bg-nvidia/30 selection:text-white">
 
   <!-- NAVBAR -->
-  <header class="border-b border-white/10 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+  <header class="border-b border-white/10 bg-slate-950/90 backdrop-blur-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-nvidia to-emerald-600 flex items-center justify-center font-bold text-black text-lg shadow-lg shadow-nvidia/20">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-nvidia to-emerald-600 flex items-center justify-center font-bold text-black text-lg shadow-lg shadow-nvidia/25" aria-hidden="true">
           ⚡
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <span class="font-extrabold text-xl tracking-tight text-white">Upgrade Pilot</span>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-nvidia/20 text-nvidia border border-nvidia/30">NVIDIA Nemotron</span>
+            <span class="font-extrabold text-lg sm:text-xl tracking-tight text-white">Upgrade Pilot</span>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-nvidia/20 text-nvidia border border-nvidia/30">NVIDIA Nemotron MoE</span>
           </div>
           <p class="text-xs text-gray-400 hidden sm:block">Nebius Token Factory • Autonomous Dependency Migration Agent</p>
         </div>
       </div>
 
-      <div class="flex items-center space-x-4">
-        <div id="statusBadge" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <div id="statusBadge" role="status" aria-live="polite" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
           <span id="statusText">System Ready</span>
         </div>
-        <a href="https://github.com/ritesh-1912/Nebius-Hackathon" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition flex items-center space-x-1 text-sm bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span class="hidden md:inline">GitHub</span>
+        <a href="https://github.com/ritesh-1912/Nebius-Hackathon" target="_blank" rel="noopener noreferrer" class="text-gray-300 hover:text-white transition flex items-center space-x-1.5 text-xs sm:text-sm bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 focus-ring" aria-label="View source repository on GitHub">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span class="hidden md:inline font-medium">GitHub</span>
         </a>
       </div>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 w-full space-y-6 sm:space-y-8">
 
     <!-- HERO & DEMO PICKER -->
-    <section class="glass-panel p-6 sm:p-8">
-      <div class="max-w-3xl mb-6">
-        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
-          Autonomous Python Dependency Upgrades
+    <section class="glass-panel p-5 sm:p-8" aria-labelledby="hero-title">
+      <div class="max-w-4xl mb-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nvidia/10 border border-nvidia/30 text-nvidia text-[11px] sm:text-xs font-semibold mb-3 max-w-full">
+          <span class="w-1.5 h-1.5 rounded-full bg-nvidia animate-pulse shrink-0"></span>
+          <span class="truncate sm:whitespace-normal">Tri-Tier NVIDIA Nemotron MoE • Nebius Token Factory • Tavily Search</span>
+        </div>
+        <h1 id="hero-title" class="text-xl sm:text-4xl font-black tracking-tight text-white mb-3">
+          Autonomous Python<br class="sm:hidden"> Dependency Upgrades
         </h1>
-        <p class="text-gray-400 text-sm sm:text-base leading-relaxed">
-          Upgrade Pilot automatically patches breaking dependency migrations using a tri-tier 
-          <span class="text-nvidia font-semibold">NVIDIA Nemotron</span> architecture, grounds fixes with real-time 
-          <span class="text-nebius font-semibold">Tavily documentation search</span>, and validates fixes in a deterministic, offline sandbox.
+        <p class="text-gray-300 text-sm sm:text-base leading-relaxed mb-6">
+          <strong>Upgrade Pilot</strong> is an autonomous AI agent that detects breaking changes during major Python dependency upgrades, grounds fixes in official documentation via Tavily, applies structured code edits with NVIDIA Nemotron MoE models, and verifies fixes inside an isolated sandbox until 100% of tests pass.
         </p>
+
+        <!-- 3-STEP WORKFLOW GUIDE -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-900/60 border border-white/10 text-xs">
+          <div class="flex items-start space-x-2.5">
+            <span class="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center shrink-0 mt-0.5 border border-blue-500/30">1</span>
+            <div>
+              <div class="font-bold text-white mb-0.5">Sandbox Test Isolation</div>
+              <p class="text-gray-400 leading-normal">Runs pytest against upgraded wheels offline in an isolated venv to capture baseline failures.</p>
+            </div>
+          </div>
+          <div class="flex items-start space-x-2.5">
+            <span class="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 font-bold flex items-center justify-center shrink-0 mt-0.5 border border-purple-500/30">2</span>
+            <div>
+              <div class="font-bold text-white mb-0.5">Plan & Official Research</div>
+              <p class="text-gray-400 leading-normal">Nemotron 3 Ultra plans migration; Tavily retrieves real-time docs; Nano synthesizes actionable rules.</p>
+            </div>
+          </div>
+          <div class="flex items-start space-x-2.5">
+            <span class="w-5 h-5 rounded-full bg-nvidia/20 text-nvidia font-bold flex items-center justify-center shrink-0 mt-0.5 border border-nvidia/30">3</span>
+            <div>
+              <div class="font-bold text-white mb-0.5">Iterative Patch & Review</div>
+              <p class="text-gray-400 leading-normal">Nemotron 3 Super applies code patches until all tests pass; Ultra reviews diff for subtle behavioral changes.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- DEMO SELECTOR CARDS -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="demoCardsContainer">
-        <!-- Card 1: Pydantic -->
-        <div id="card-demo_pydantic" onclick="selectDemo('demo_pydantic')" class="cursor-pointer glass-panel-glow border-2 border-nvidia p-5 rounded-xl transition duration-200 hover:scale-[1.01] relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-emerald-950/20">
-          <div class="flex items-start justify-between mb-3">
-            <div>
-              <span class="inline-block px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-nvidia/20 text-nvidia border border-nvidia/30 mb-1">Demo 1</span>
-              <h3 class="text-lg font-bold text-white">Pydantic v1 → v2 Migration</h3>
+      <div class="space-y-2 mb-6">
+        <label class="text-xs font-bold uppercase tracking-wider text-gray-400">Select Python Demo Repository to Upgrade:</label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="demoCardsContainer" role="radiogroup" aria-label="Python Migration Demos">
+          
+          <!-- Card 1: Pydantic -->
+          <div id="card-demo_pydantic" 
+               onclick="selectDemo('demo_pydantic')" 
+               onkeydown="handleDemoKey(event, 'demo_pydantic')"
+               tabindex="0"
+               role="radio"
+               aria-checked="true"
+               class="cursor-pointer glass-panel-glow border-2 border-nvidia p-5 rounded-xl transition duration-200 hover:scale-[1.01] relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-emerald-950/20 focus-ring">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-nvidia/20 text-nvidia border border-nvidia/30 mb-1.5">Demo 1</span>
+                <h3 class="text-lg font-bold text-white">Pydantic v1 → v2 Migration</h3>
+              </div>
+              <div id="check-demo_pydantic" class="w-6 h-6 rounded-full bg-nvidia flex items-center justify-center text-black font-extrabold text-sm" aria-hidden="true">✓</div>
             </div>
-            <div id="check-demo_pydantic" class="w-6 h-6 rounded-full bg-nvidia flex items-center justify-center text-black font-bold text-sm">✓</div>
-          </div>
-          <p class="text-xs text-gray-300 mb-3 leading-relaxed">
-            E-Commerce order & customer service. Upgrades breaking <code class="text-nvidia">Field(regex=...)</code>, <code class="text-nvidia">@validator</code>, inner <code class="text-nvidia">class Config</code>, and <code class="text-nvidia">.dict()</code> calls.
-          </p>
-          <div class="flex flex-wrap items-center gap-2 text-xs">
-            <span class="px-2 py-0.5 rounded bg-white/5 text-gray-300 border border-white/10 font-mono">1.10.17 → 2.14.1</span>
-            <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">10 pytest tests</span>
-            <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">Breaking Changes</span>
-          </div>
-        </div>
+            
+            <p class="text-xs text-gray-300 mb-3 leading-relaxed">
+              <strong>Order & Customer Management Service:</strong> Upgrades real-world breaking changes across core models and service classes.
+            </p>
 
-        <!-- Card 2: SQLAlchemy -->
-        <div id="card-demo_sqlalchemy" onclick="selectDemo('demo_sqlalchemy')" class="cursor-pointer glass-panel border border-white/10 p-5 rounded-xl transition duration-200 hover:scale-[1.01] hover:border-white/30 relative overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950">
-          <div class="flex items-start justify-between mb-3">
-            <div>
-              <span class="inline-block px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 mb-1">Demo 2</span>
-              <h3 class="text-lg font-bold text-white">SQLAlchemy 1.4 → 2.0 Migration</h3>
+            <div class="space-y-1.5 mb-3 bg-slate-950/60 p-2.5 rounded-lg border border-white/5 text-[11px] text-gray-300">
+              <div class="text-[10px] font-bold uppercase text-gray-400">Breaking Changes Addressed:</div>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">Field(regex=...) → pattern=...</span>
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">class Config → ConfigDict</span>
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">@validator → @field_validator</span>
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">@root_validator → @model_validator</span>
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">.parse_obj() → .model_validate()</span>
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">.dict() → .model_dump()</span>
+              </div>
             </div>
-            <div id="check-demo_sqlalchemy" class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-gray-400 font-bold text-sm hidden">✓</div>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="px-2 py-0.5 rounded bg-white/10 text-emerald-400 border border-white/10 font-mono text-[11px]">pydantic 1.10.17 → 2.14.1</span>
+              <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-medium">10 pytest tests</span>
+              <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20 font-medium">Collection-time Failure</span>
+            </div>
           </div>
-          <p class="text-xs text-gray-300 mb-3 leading-relaxed">
-            Task and project tracking service. Upgrades legacy <code class="text-blue-400">engine.execute(...)</code>, <code class="text-blue-400">session.query()</code>, and <code class="text-blue-400">declarative_base()</code> patterns.
-          </p>
-          <div class="flex flex-wrap items-center gap-2 text-xs">
-            <span class="px-2 py-0.5 rounded bg-white/5 text-gray-300 border border-white/10 font-mono">1.4.54 → 2.0.55</span>
-            <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">8 pytest tests</span>
-            <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">Breaking Changes</span>
+
+          <!-- Card 2: SQLAlchemy -->
+          <div id="card-demo_sqlalchemy" 
+               onclick="selectDemo('demo_sqlalchemy')" 
+               onkeydown="handleDemoKey(event, 'demo_sqlalchemy')"
+               tabindex="0"
+               role="radio"
+               aria-checked="false"
+               class="cursor-pointer glass-panel border border-white/10 p-5 rounded-xl transition duration-200 hover:scale-[1.01] hover:border-white/30 relative overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950 focus-ring">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 mb-1.5">Demo 2</span>
+                <h3 class="text-lg font-bold text-white">SQLAlchemy 1.4 → 2.0 Migration</h3>
+              </div>
+              <div id="check-demo_sqlalchemy" class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-gray-400 font-extrabold text-sm hidden" aria-hidden="true">✓</div>
+            </div>
+            
+            <p class="text-xs text-gray-300 mb-3 leading-relaxed">
+              <strong>Task & Project Tracking Service:</strong> Migrates deprecated ORM query syntax, direct string execution, and legacy factories.
+            </p>
+
+            <div class="space-y-1.5 mb-3 bg-slate-950/60 p-2.5 rounded-lg border border-white/5 text-[11px] text-gray-300">
+              <div class="text-[10px] font-bold uppercase text-gray-400">Breaking Changes Addressed:</div>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">engine.execute(...) → conn.execute(text(...))</span>
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">session.query().get() → session.get()</span>
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">sqlalchemy.ext.declarative → sqlalchemy.orm</span>
+                <span class="px-1.5 py-0.5 rounded bg-white/5 text-gray-300 font-mono text-[10px]">Explicit text() execution construct</span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="px-2 py-0.5 rounded bg-white/10 text-blue-300 border border-white/10 font-mono text-[11px]">sqlalchemy 1.4.54 → 2.0.55</span>
+              <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-medium">8 pytest tests</span>
+              <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20 font-medium">Runtime API Removal</span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- ACTION BAR -->
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
-        <div class="flex items-center space-x-3 text-xs text-gray-400">
-          <span class="inline-flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>Offline Wheelhouse</span>
-          <span class="inline-flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-nvidia mr-1.5"></span>Token Factory MoE</span>
-          <span class="inline-flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-nebius mr-1.5"></span>Tavily Live Grounding</span>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-gray-300">
+          <span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5" aria-hidden="true"></span>Offline Wheelhouse</span>
+          <span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-nvidia mr-1.5" aria-hidden="true"></span>Token Factory MoE</span>
+          <span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-sky-400 mr-1.5" aria-hidden="true"></span>Tavily Search Grounding</span>
         </div>
 
         <div class="flex items-center space-x-3 w-full sm:w-auto">
-          <button id="resetBtn" onclick="resetState()" class="hidden px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-semibold text-gray-300 transition">
+          <button id="resetBtn" onclick="resetState()" class="hidden px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs sm:text-sm font-semibold text-gray-300 transition focus-ring">
             Reset
           </button>
-          <button id="cachedRunBtn" onclick="startUpgrade(true)" class="px-4 py-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-xs sm:text-sm font-semibold text-purple-300 transition flex items-center space-x-1.5" title="Replay a verified pre-recorded real run without consuming live API tokens">
+          <button id="cachedRunBtn" onclick="startUpgrade(true)" class="px-4 py-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-xs sm:text-sm font-semibold text-purple-300 transition flex items-center space-x-1.5 focus-ring" title="Replay a verified pre-recorded real run without consuming live API tokens">
             <span>📼</span>
             <span>Cached Sample Run</span>
           </button>
-          <button id="runBtn" onclick="startUpgrade(false)" class="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-nvidia to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black font-extrabold text-sm sm:text-base tracking-wide shadow-lg shadow-nvidia/25 hover:shadow-nvidia/40 transition transform active:scale-95 flex items-center justify-center space-x-2">
+          <button id="runBtn" onclick="startUpgrade(false)" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-nvidia to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black font-extrabold text-sm sm:text-base tracking-wide shadow-lg shadow-nvidia/25 hover:shadow-nvidia/40 transition transform active:scale-95 flex items-center justify-center space-x-2 focus-ring">
             <span id="runBtnIcon">🚀</span>
             <span id="runBtnText">Run Upgrade Pilot</span>
           </button>
@@ -138,57 +207,57 @@
     </section>
 
     <!-- LIVE TELEMETRY & COST PANEL -->
-    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4" aria-label="Cost and Token Telemetry">
       <!-- Total Cost -->
       <div class="glass-panel p-4 relative overflow-hidden border-nvidia/30 bg-gradient-to-b from-nvidia/5 to-transparent">
-        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Total Estimated Cost</div>
+        <div class="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Total Estimated Cost</div>
         <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono" id="telemetryTotalCost">$0.000000</div>
         <div class="text-[11px] text-nvidia mt-1 flex items-center">
-          <span class="font-semibold" id="telemetryTotalTokens">0</span> tokens total
+          <span class="font-semibold mr-1" id="telemetryTotalTokens">0</span> tokens total
         </div>
       </div>
 
       <!-- Ultra -->
       <div class="glass-panel p-4">
-        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+        <div class="flex items-center justify-between text-xs text-gray-300 mb-1">
           <span class="font-semibold uppercase tracking-wider text-purple-400">Nemotron 3 Ultra</span>
-          <span class="font-mono text-[10px] text-gray-500">Plan & Review</span>
+          <span class="font-mono text-[10px] text-gray-400">Plan & Review</span>
         </div>
         <div class="text-xl sm:text-2xl font-bold text-white font-mono" id="costUltra">$0.000000</div>
-        <div class="text-[11px] text-gray-400 mt-1 font-mono">
+        <div class="text-[11px] text-gray-300 mt-1 font-mono">
           <span id="tokensUltra">0</span> tokens
         </div>
       </div>
 
       <!-- Super -->
       <div class="glass-panel p-4">
-        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+        <div class="flex items-center justify-between text-xs text-gray-300 mb-1">
           <span class="font-semibold uppercase tracking-wider text-nvidia">Nemotron 3 Super</span>
-          <span class="font-mono text-[10px] text-gray-500">Patching</span>
+          <span class="font-mono text-[10px] text-gray-400">Code Patching</span>
         </div>
         <div class="text-xl sm:text-2xl font-bold text-white font-mono" id="costSuper">$0.000000</div>
-        <div class="text-[11px] text-gray-400 mt-1 font-mono">
+        <div class="text-[11px] text-gray-300 mt-1 font-mono">
           <span id="tokensSuper">0</span> tok (<span id="reasoningSuper" class="text-emerald-400">0</span> rz)
         </div>
       </div>
 
       <!-- Nano -->
       <div class="glass-panel p-4">
-        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
-          <span class="font-semibold uppercase tracking-wider text-nebius">Nemotron 3 Nano</span>
-          <span class="font-mono text-[10px] text-gray-500">Summarization</span>
+        <div class="flex items-center justify-between text-xs text-gray-300 mb-1">
+          <span class="font-semibold uppercase tracking-wider text-sky-400">Nemotron 3 Nano</span>
+          <span class="font-mono text-[10px] text-gray-400">Doc Synthesis</span>
         </div>
         <div class="text-xl sm:text-2xl font-bold text-white font-mono" id="costNano">$0.000000</div>
-        <div class="text-[11px] text-gray-400 mt-1 font-mono">
+        <div class="text-[11px] text-gray-300 mt-1 font-mono">
           <span id="tokensNano">0</span> tokens
         </div>
       </div>
 
       <!-- Tavily Search Counter -->
       <div class="glass-panel p-4 border-sky-500/30 bg-gradient-to-b from-sky-500/5 to-transparent col-span-2 sm:col-span-1">
-        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+        <div class="flex items-center justify-between text-xs text-gray-300 mb-1">
           <span class="font-semibold uppercase tracking-wider text-sky-400">Tavily Research</span>
-          <span class="font-mono text-[10px] text-sky-300/70">Live API</span>
+          <span class="font-mono text-[10px] text-sky-300/80">Live API</span>
         </div>
         <div class="text-xl sm:text-2xl font-bold text-white font-mono" id="tavilyCallsCount">0</div>
         <div class="text-[11px] text-sky-300 mt-1 font-mono">
@@ -198,50 +267,55 @@
     </section>
 
     <!-- PROGRESS INDICATOR OF PASSING TESTS -->
-    <section id="progressSection" class="glass-panel p-5 hidden">
+    <section id="progressSection" class="glass-panel p-5 hidden" aria-labelledby="progress-title">
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center space-x-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Pytest Verification Pass Rate</span>
-          <span id="iterationBadge" class="text-[10px] px-2 py-0.5 rounded font-mono bg-white/10 text-gray-300">Baseline</span>
+          <span id="progress-title" class="text-xs font-bold uppercase tracking-wider text-gray-300">Pytest Verification Pass Rate</span>
+          <span id="iterationBadge" class="text-[10px] px-2 py-0.5 rounded font-mono bg-white/10 text-gray-200">Baseline</span>
         </div>
         <div class="font-mono text-sm font-bold text-white" id="testRatioLabel">0 / 0 Tests Passing</div>
       </div>
-      <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden border border-white/10 p-0.5">
+      <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden border border-white/10 p-0.5" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="testProgressContainer">
         <div id="testProgressBar" class="h-full bg-gradient-to-r from-red-500 via-amber-400 to-nvidia rounded-full transition-all duration-500 w-0"></div>
       </div>
     </section>
 
     <!-- LIVE EVENT TIMELINE & ARTIFACTS CONTAINER -->
-    <section class="space-y-4">
+    <section class="space-y-4" aria-labelledby="timeline-heading">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+        <h2 id="timeline-heading" class="text-base sm:text-lg font-bold text-white flex items-center space-x-2">
           <span>Execution Stream & Artifacts</span>
-          <span id="livePulse" class="hidden w-2 h-2 rounded-full bg-nvidia animate-ping"></span>
+          <span id="livePulse" class="hidden w-2.5 h-2.5 rounded-full bg-nvidia animate-ping" aria-hidden="true"></span>
         </h2>
-        <span id="eventCountLabel" class="text-xs text-gray-500 font-mono">0 events</span>
+        <span id="eventCountLabel" class="text-xs text-gray-400 font-mono">0 events</span>
       </div>
 
       <!-- EMPTY STATE -->
-      <div id="emptyState" class="glass-panel p-12 text-center border-dashed border-white/15">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl">
+      <div id="emptyState" class="glass-panel p-8 sm:p-12 text-center border-dashed border-white/15">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl" aria-hidden="true">
           ⚙️
         </div>
-        <h3 class="text-lg font-bold text-white mb-2">Ready to Upgrade</h3>
-        <p class="text-sm text-gray-400 max-w-md mx-auto mb-6">
-          Pick a Python demo repository above and click "Run Upgrade Pilot" to trigger the closed-loop agent:
-          detect failure → research → plan → patch → test → verify.
+        <h3 class="text-lg font-bold text-white mb-2">Ready for Autonomous Migration</h3>
+        <p class="text-sm text-gray-300 max-w-lg mx-auto mb-6 leading-relaxed">
+          Select a Python demo repository above and click <strong>"Run Upgrade Pilot"</strong> to launch the closed-loop agent:
+          detect failure → research official docs → plan → patch → run pytest → verify PR summary.
         </p>
-        <button onclick="startUpgrade()" class="px-5 py-2.5 rounded-lg bg-nvidia/20 text-nvidia border border-nvidia/40 font-semibold text-sm hover:bg-nvidia/30 transition">
-          Start Demo Run
-        </button>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button onclick="startUpgrade(false)" class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-nvidia text-black font-extrabold text-sm hover:bg-lime-400 transition shadow-lg shadow-nvidia/20 focus-ring">
+            Start Live Demo Run
+          </button>
+          <button onclick="startUpgrade(true)" class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold text-sm hover:bg-purple-500/30 transition focus-ring">
+            📼 Replay Cached Run (Zero Credits)
+          </button>
+        </div>
       </div>
 
       <!-- CACHED SAMPLE RUN BADGE BANNER -->
       <div id="cachedRunBanner" class="hidden p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 flex items-center justify-between">
         <div class="flex items-center space-x-2.5">
-          <span class="text-lg">📼</span>
+          <span class="text-lg" aria-hidden="true">📼</span>
           <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Cached Sample Run</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Cached Sample Run Active</span>
             <span class="text-xs text-purple-200 ml-2 font-mono">Verified recording of previous real run — zero API credits consumed</span>
           </div>
         </div>
@@ -249,62 +323,101 @@
       </div>
 
       <!-- TIMELINE FEED -->
-      <div id="timelineFeed" class="space-y-4"></div>
+      <div id="timelineFeed" class="space-y-4" aria-live="polite"></div>
     </section>
 
     <!-- FINAL SCREEN: DIFF & PR SUMMARY (HIDDEN UNTIL FINISHED) -->
-    <section id="finalResultsSection" class="glass-panel p-6 sm:p-8 space-y-6 hidden border-emerald-500/30">
+    <section id="finalResultsSection" class="glass-panel p-5 sm:p-8 space-y-6 hidden border-emerald-500/30" aria-labelledby="results-title">
+      
       <!-- HARD CAP ALERT BANNER (IF TRIGGERED) -->
-      <div id="capAlertBanner" class="hidden p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-start space-x-3">
-        <span class="text-xl">⚠️</span>
+      <div id="capAlertBanner" class="hidden p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-start space-x-3" role="alert">
+        <span class="text-xl" aria-hidden="true">⚠️</span>
         <div>
           <div class="text-xs font-bold uppercase tracking-wider text-amber-400">Execution Limit Enforced</div>
           <div id="capAlertText" class="text-xs text-amber-200 mt-0.5 font-mono"></div>
         </div>
       </div>
 
+      <!-- DELIVERABLES HEADER -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/10 gap-4">
         <div>
-          <span class="text-xs font-bold uppercase tracking-wider text-nvidia">Migration Complete</span>
-          <h2 class="text-2xl font-extrabold text-white">Final Review & PR Deliverables</h2>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-nvidia">Migration Complete</span>
+            <span id="finalTestBadge" class="text-xs px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">100% Tests Passing</span>
+          </div>
+          <h2 id="results-title" class="text-2xl font-black text-white mt-1">Final Review & PR Deliverables</h2>
         </div>
-        <div class="flex items-center space-x-3">
-          <button onclick="copyToClipboard('finalDiffText', 'Diff')" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 transition flex items-center space-x-1.5">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button id="copyDiffBtn" onclick="copyToClipboard('finalDiffText', 'Diff', 'copyDiffBtn')" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-200 transition flex items-center space-x-1.5 focus-ring">
             <span>📋</span>
-            <span>Copy Diff</span>
+            <span id="copyDiffBtnText">Copy Diff</span>
           </button>
-          <button onclick="copyToClipboard('prSummaryMarkdown', 'PR Summary')" class="px-4 py-2 rounded-lg bg-nvidia/20 hover:bg-nvidia/30 border border-nvidia/30 text-xs font-bold text-nvidia transition flex items-center space-x-1.5">
+          <button id="copyPrBtn" onclick="copyToClipboard('prSummaryMarkdown', 'PR Summary', 'copyPrBtn')" class="px-4 py-2 rounded-lg bg-nvidia/20 hover:bg-nvidia/30 border border-nvidia/30 text-xs font-bold text-nvidia transition flex items-center space-x-1.5 focus-ring">
             <span>🚀</span>
-            <span>Copy PR Summary</span>
+            <span id="copyPrBtnText">Copy PR Summary</span>
+          </button>
+          <button onclick="downloadPatchFile()" class="px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-200 transition flex items-center space-x-1.5 focus-ring" title="Download .patch file">
+            <span>💾</span>
+            <span>Download .diff</span>
           </button>
         </div>
       </div>
 
-      <!-- PR Summary Markdown Render -->
-      <div>
-        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center space-x-2">
-          <span>GitHub Pull Request Description</span>
+      <!-- DELIVERABLES TAB NAVIGATION -->
+      <div class="flex items-center space-x-2 border-b border-white/10 pb-2">
+        <button id="tabPrSummaryBtn" onclick="switchResultTab('pr')" class="tab-btn active px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium flex items-center space-x-1.5 focus-ring">
+          <span>📝</span>
+          <span>GitHub PR Description (Ultra)</span>
+        </button>
+        <button id="tabDiffBtn" onclick="switchResultTab('diff')" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium text-gray-400 hover:text-white flex items-center space-x-1.5 focus-ring">
+          <span>🔍</span>
+          <span>Unified Git Diff (Super)</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: PR Summary Markdown Render -->
+      <div id="tabPrContent">
+        <div class="flex items-center justify-between text-xs text-gray-400 mb-2">
+          <span>Rendered GitHub Pull Request Markdown</span>
           <span class="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">Nemotron 3 Ultra</span>
-        </h3>
-        <div id="prSummaryContainer" class="p-5 rounded-xl bg-slate-900/90 border border-white/10 markdown-body text-sm leading-relaxed max-h-96 overflow-y-auto"></div>
+        </div>
+        <div id="prSummaryContainer" class="p-5 rounded-xl bg-slate-900/90 border border-white/10 markdown-body text-sm leading-relaxed max-h-[32rem] overflow-y-auto"></div>
         <textarea id="prSummaryMarkdown" class="hidden"></textarea>
       </div>
 
-      <!-- Full Unified Diff Viewer -->
-      <div>
-        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-3">
-          Unified Git Diff
-        </h3>
-        <div id="finalDiffContainer" class="diff-container p-4 max-h-96 overflow-y-auto"></div>
+      <!-- TAB 2: Full Unified Diff Viewer -->
+      <div id="tabDiffContent" class="hidden">
+        <div class="flex items-center justify-between text-xs text-gray-400 mb-2">
+          <span>Complete Unified Git Diff</span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">AST-Verified Patch</span>
+        </div>
+        <div id="finalDiffContainer" class="diff-container p-4 max-h-[32rem] overflow-y-auto"></div>
         <textarea id="finalDiffText" class="hidden"></textarea>
       </div>
     </section>
 
   </main>
 
+  <!-- FOOTER -->
+  <footer class="border-t border-white/10 bg-slate-950/60 py-6 mt-12 text-center text-xs text-gray-400">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-nvidia" aria-hidden="true"></span>
+        <span>Upgrade Pilot • Autonomous Agentic Engineering Hackathon</span>
+      </div>
+      <div class="flex items-center space-x-4 text-gray-400">
+        <span>NVIDIA Nemotron 3 MoE (Ultra, Super, Nano)</span>
+        <span>•</span>
+        <span>Nebius Token Factory</span>
+        <span>•</span>
+        <span>Tavily Search API</span>
+      </div>
+    </div>
+  </footer>
+
   <!-- TOAST NOTIFICATION -->
-  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-slate-900 border border-nvidia/40 text-white text-sm font-medium shadow-2xl transition transform translate-y-24 opacity-0 z-50 flex items-center space-x-2">
-    <span class="text-nvidia">✓</span>
+  <div id="toast" role="status" aria-live="polite" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-slate-900 border border-nvidia/40 text-white text-sm font-medium shadow-2xl transition transform translate-y-24 opacity-0 z-50 flex items-center space-x-2">
+    <span class="text-nvidia font-bold" aria-hidden="true">✓</span>
     <span id="toastMsg">Copied to clipboard</span>
   </div>
 
