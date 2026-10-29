@@ -455,7 +455,7 @@ gantt
 
     section Phase 4: Deploy & Polish
     Dockerization & Hosted URL   :m9, after m8, 2.0h
-    Docs, README & Video Demo    :m10, after m9, 2.0h
+    Docs, README & Submission Materials :m10, after m9, 2.0h
     Safety Buffer & Submission   :m11, after m10, 5.0h
 ```
 
@@ -497,7 +497,7 @@ gantt
 
 #### Task Group 7: Hackathon Deliverables & Submission (2.0 Hours)
 - [ ] **Task 7.1**: Write comprehensive `README.md` highlighting NVIDIA Nemotron usage, Nebius Token Factory speed/cost advantages, architecture diagram, and local setup instructions. (1.0h)
-- [ ] **Task 7.2**: Record a 2-3 minute demo video demonstrating the live Pydantic and SQLAlchemy upgrades with cost tracking. (1.0h)
+- [x] **Task 7.2**: Complete written submission materials (README, DEVPOST, FEEDBACK) with cost and token audit. (1.0h)
 - [ ] **Safety Buffer**: (5.5 Hours reserved for edge-case bug fixes and judging submission).
 
 ---
