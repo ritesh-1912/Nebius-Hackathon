@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = ""
 
     # Subprocess & LLM network limits
-    NEBIUS_TIMEOUT_SECONDS: float = 60.0
-    NEBIUS_MAX_RETRIES: int = 3
+    NEBIUS_TIMEOUT_SECONDS: float = 180.0
+    NEBIUS_MAX_RETRIES: int = 4
     SANDBOX_TIMEOUT_SECONDS: int = 25
     MAX_ITERATIONS: int = 5
     MAX_TOKEN_BUDGET: int = 60000

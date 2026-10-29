@@ -60,7 +60,7 @@ function selectDemo(demoId) {
 }
 
 // Start Upgrade Pipeline
-function startUpgrade() {
+function startUpgrade(isCached = false) {
   if (eventSource) return;
 
   // UI state transition
@@ -73,12 +73,27 @@ function startUpgrade() {
   const runBtn = document.getElementById("runBtn");
   const runBtnText = document.getElementById("runBtnText");
   const runBtnIcon = document.getElementById("runBtnIcon");
+  const cachedRunBtn = document.getElementById("cachedRunBtn");
+
   runBtn.disabled = true;
   runBtn.classList.add("opacity-75", "cursor-not-allowed");
-  runBtnIcon.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
-  runBtnText.innerText = "Agent Upgrading...";
+  if (cachedRunBtn) {
+    cachedRunBtn.disabled = true;
+    cachedRunBtn.classList.add("opacity-50", "cursor-not-allowed");
+  }
 
-  updateStatus("Agent Running", "running");
+  if (isCached) {
+    runBtnText.innerText = "Replaying Cached Run...";
+    updateStatus("Replaying Cached", "running");
+    const banner = document.getElementById("cachedRunBanner");
+    if (banner) banner.classList.remove("hidden");
+  } else {
+    runBtnIcon.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+    runBtnText.innerText = "Agent Upgrading...";
+    updateStatus("Agent Running", "running");
+    const banner = document.getElementById("cachedRunBanner");
+    if (banner) banner.classList.add("hidden");
+  }
 
   // Reset counters
   eventCount = 0;
@@ -86,7 +101,7 @@ function startUpgrade() {
   document.getElementById("timelineFeed").innerHTML = "";
 
   // Connect to SSE stream
-  const streamUrl = `/api/upgrade/stream?demo=${encodeURIComponent(selectedDemo)}`;
+  const streamUrl = `/api/upgrade/stream?demo=${encodeURIComponent(selectedDemo)}${isCached ? "&cached=true" : ""}`;
   eventSource = new EventSource(streamUrl);
 
   eventSource.onmessage = (e) => {
@@ -108,6 +123,12 @@ function startUpgrade() {
 function handleAgentEvent(event) {
   eventCount++;
   document.getElementById("eventCountLabel").innerText = `${eventCount} events`;
+
+  // Detect cached run
+  if (event.run_id && event.run_id.includes("cached")) {
+    const banner = document.getElementById("cachedRunBanner");
+    if (banner) banner.classList.remove("hidden");
+  }
 
   // Update Telemetry Panel
   if (event.telemetry && event.telemetry.cumulative) {
@@ -132,7 +153,8 @@ function handleAgentEvent(event) {
 
   if (event.step === "COMPLETED") {
     const isSuccess = event.status === "success";
-    finishRun(isSuccess, event.message);
+    const isCapHit = !!(event.message && (event.message.includes("cap reached") || event.message.includes("Migration halted") || event.message.includes("Hard cap")));
+    finishRun(isSuccess, event.message, isCapHit);
     showFinalResults();
   }
 }
@@ -372,7 +394,7 @@ function formatDiffHtml(diffText) {
 }
 
 // Finish Run & Reset Button State
-function finishRun(success, message) {
+function finishRun(success, message, isCapHit = false) {
   if (eventSource) {
     eventSource.close();
     eventSource = null;
@@ -381,14 +403,32 @@ function finishRun(success, message) {
   const runBtn = document.getElementById("runBtn");
   const runBtnText = document.getElementById("runBtnText");
   const runBtnIcon = document.getElementById("runBtnIcon");
+  const cachedRunBtn = document.getElementById("cachedRunBtn");
+
   runBtn.disabled = false;
   runBtn.classList.remove("opacity-75", "cursor-not-allowed");
+  if (cachedRunBtn) {
+    cachedRunBtn.disabled = false;
+    cachedRunBtn.classList.remove("opacity-50", "cursor-not-allowed");
+  }
   runBtnIcon.innerText = "🚀";
   runBtnText.innerText = "Run Upgrade Pilot";
 
   document.getElementById("livePulse").classList.add("hidden");
 
-  updateStatus(success ? "Upgrade Finished" : "Run Completed", success ? "ready" : "warning");
+  if (isCapHit) {
+    updateStatus("Limit Cap Enforced", "warning");
+    const capAlert = document.getElementById("capAlertBanner");
+    const capText = document.getElementById("capAlertText");
+    if (capAlert && capText) {
+      capAlert.classList.remove("hidden");
+      capText.innerText = message;
+    }
+  } else {
+    updateStatus(success ? "Upgrade Succeeded" : "Run Completed", success ? "ready" : "warning");
+    const capAlert = document.getElementById("capAlertBanner");
+    if (capAlert) capAlert.classList.add("hidden");
+  }
 }
 
 // Update Status Pill
@@ -418,6 +458,10 @@ function resetState() {
   document.getElementById("finalResultsSection").classList.add("hidden");
   document.getElementById("resetBtn").classList.add("hidden");
   document.getElementById("livePulse").classList.add("hidden");
+  const capAlert = document.getElementById("capAlertBanner");
+  if (capAlert) capAlert.classList.add("hidden");
+  const cachedBanner = document.getElementById("cachedRunBanner");
+  if (cachedBanner) cachedBanner.classList.add("hidden");
 
   // Reset counters
   document.getElementById("telemetryTotalCost").innerText = "$0.000000";

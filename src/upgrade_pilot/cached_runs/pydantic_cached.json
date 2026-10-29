@@ -1,196 +1,746 @@
 [
   {
-    "event_id": "evt_cache_pyd_1",
-    "run_id": "run_cached_pydantic",
+    "event_id": "evt_be8d12df9c43",
+    "run_id": "run_a5c5b3db6b",
     "demo_id": "demo_pydantic",
     "step": "INIT",
     "iteration": 0,
     "max_iterations": 5,
     "status": "running",
-    "message": "Provisioning isolated sandbox for 'demo_pydantic' with upgraded dependencies (Pydantic 2.14.1)...",
-    "timestamp": "2026-10-29T02:00:00Z",
-    "payload": {},
-    "telemetry": {}
+    "message": "Provisioning isolated sandbox for 'demo_pydantic' with upgraded dependencies...",
+    "timestamp": "2026-10-29T11:10:02.783042+00:00",
+    "payload": {
+      "test_summary": null,
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
+    },
+    "telemetry": {
+      "current_tier": null,
+      "call_tokens": null,
+      "cumulative": {
+        "tiers": {
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          }
+        },
+        "total_tokens": 0,
+        "total_cost_usd": 0.0,
+        "tavily_calls": 0
+      }
+    }
   },
   {
-    "event_id": "evt_cache_pyd_2",
-    "run_id": "run_cached_pydantic",
+    "event_id": "evt_4861d3ede80c",
+    "run_id": "run_a5c5b3db6b",
     "demo_id": "demo_pydantic",
     "step": "BASELINE_TEST",
     "iteration": 0,
     "max_iterations": 5,
     "status": "running",
     "message": "Baseline verification complete: 0 passed, 1 failed out of 1.",
-    "timestamp": "2026-10-29T02:00:02Z",
+    "timestamp": "2026-10-29T11:10:06.299313+00:00",
     "payload": {
       "test_summary": {
         "total": 1,
         "passed": 0,
         "failed": 1,
-        "failed_test_names": ["ERROR test_order_service.py - pydantic.errors.PydanticUserError: `regex` is removed. use `pattern` instead"],
-        "output_tail": "pydantic.errors.PydanticUserError: `regex` is removed. use `pattern` instead\nFor further information visit https://errors.pydantic.dev/2.14/u/removed-kwargs"
-      }
+        "failed_test_names": [
+          "ERROR test_order_service.py - pydantic.errors.PydanticUserError: `regex` is r..."
+        ],
+        "output_tail": "____________________ ERROR collecting test_order_service.py ____________________\ntest_order_service.py:14: in <module>\n    from order_service import Address, Order, OrderItem, OrderService, User\norder_service.py:15: in <module>\n    class Address(BaseModel):\norder_service.py:21: in Address\n    zip_code: str = Field(..., regex=r\"^\\d{5}(-\\d{4})?$\")\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/tmp/upgrade_pilot_runs/run_4ce8bf6929_2a1jwupz/.venv/lib/python3.13/site-packages/pydantic/fields.py:1481: in Field\n    raise PydanticUserError('`regex` is removed. use `pattern` instead', code='removed-kwargs')\nE   pydantic.errors.PydanticUserError: `regex` is removed. use `pattern` instead\nE   \nE   For further information visit https://errors.pydantic.dev/2.14/u/removed-kwargs"
+      },
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
     },
-    "telemetry": {}
+    "telemetry": {
+      "current_tier": null,
+      "call_tokens": null,
+      "cumulative": {
+        "tiers": {
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          }
+        },
+        "total_tokens": 0,
+        "total_cost_usd": 0.0,
+        "tavily_calls": 0
+      }
+    }
   },
   {
-    "event_id": "evt_cache_pyd_3",
-    "run_id": "run_cached_pydantic",
+    "event_id": "evt_e3dc4ad199c8",
+    "run_id": "run_a5c5b3db6b",
+    "demo_id": "demo_pydantic",
+    "step": "PLANNING",
+    "iteration": 0,
+    "max_iterations": 5,
+    "status": "running",
+    "message": "Nemotron 3 Ultra is analyzing the codebase and pytest failures to draft a migration plan...",
+    "timestamp": "2026-10-29T11:10:06.299524+00:00",
+    "payload": {
+      "test_summary": null,
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
+    },
+    "telemetry": {
+      "current_tier": null,
+      "call_tokens": null,
+      "cumulative": {
+        "tiers": {
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          }
+        },
+        "total_tokens": 0,
+        "total_cost_usd": 0.0,
+        "tavily_calls": 0
+      }
+    }
+  },
+  {
+    "event_id": "evt_bd259c66c4a1",
+    "run_id": "run_a5c5b3db6b",
     "demo_id": "demo_pydantic",
     "step": "PLANNING",
     "iteration": 0,
     "max_iterations": 5,
     "status": "success",
     "message": "Nemotron 3 Ultra generated the migration plan.",
-    "timestamp": "2026-10-29T02:00:05Z",
+    "timestamp": "2026-10-29T11:10:15.184062+00:00",
     "payload": {
-      "plan_markdown": "### Architectural Migration Plan: Pydantic v1 → v2\n\n1. **Imports**: Update `from pydantic import ...` to include `field_validator`, `model_validator`, `ConfigDict`.\n2. **Field Constraints**: Replace `Field(..., regex=r\"...\")` with `Field(..., pattern=r\"...\")`.\n3. **Model Configuration**: Replace inner `class Config:` with `model_config = ConfigDict(str_strip_whitespace=True, from_attributes=True, validate_assignment=True)`.\n4. **Validators**: Convert `@validator(\"...\")` to `@field_validator(\"...\")` with `@classmethod`.\n5. **Root Validator**: Convert `@root_validator` to `@model_validator(mode=\"after\")`.\n6. **Serialization & Parsing**: Replace `.dict()` with `.model_dump()` and `.parse_obj()` with `.model_validate()`."
+      "test_summary": null,
+      "research_findings": null,
+      "plan_markdown": "### Architectural Migration Plan: Pydantic v1 \u2192 v2\n\nThe test failure originates from **`Field(regex=...)` removal**. The trace confirms the codebase is running on Pydantic v2 (error code `removed-kwargs`). Below is the precise, ordered migration strategy.\n\n---\n\n#### 1. Breaking API Changes Inventory\n| v1 API | v2 Replacement | Location(s) |\n| :--- | :--- | :--- |\n| `Field(..., regex=pattern)` | `Field(..., pattern=pattern)` | `Address.zip_code` |\n| `class Config: orm_mode = True` | `model_config = ConfigDict(from_attributes=True)` | `User` |\n| `class Config: anystr_strip_whitespace = True` | `model_config = ConfigDict(str_strip_whitespace=True)` | `Address`, `User` |\n| `class Config: validate_assignment = True` | `model_config = ConfigDict(validate_assignment=True)` | `Order` |\n| `@validator(\"field\")` | `@field_validator(\"field\")` (default `mode=\"after\"`) | `User.username`, `User.email`, `OrderItem.sku` |\n| `@root_validator` | `@model_validator(mode=\"before\")` | `Order.compute_and_verify_total` |\n| `Model.parse_obj(data)` | `Model.model_validate(data)` | `OrderService.register_customer`, `create_order`, `Address.parse_obj` (tests) |\n| `model.dict(...)` | `model.model_dump(...)` | `OrderService.export_customer_dict`, `export_order_summary` |\n| `from pydantic import validator, root_validator` | `from pydantic import field_validator, model_validator, ConfigDict` | Imports |\n\n---\n\n#### 2. File Modification Order (Minimizes Regression)\n\n##### **Step 1: `order_service.py` \u2014 Imports & Config Modernization**\nUpdate imports first to unblock subsequent decorator changes.\n```python\n# REPLACE imports\nfrom pydantic import BaseModel, Field, Validation",
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
     },
     "telemetry": {
       "current_tier": "ultra",
-      "call_tokens": { "prompt_tokens": 820, "completion_tokens": 420, "reasoning_tokens": 120, "cost_usd": 0.00416 },
+      "call_tokens": {
+        "prompt_tokens": 2524,
+        "completion_tokens": 2048,
+        "reasoning_tokens": 1603,
+        "cost_usd": 0.017336
+      },
       "cumulative": {
         "tiers": {
-          "ultra": { "tier": "ultra", "prompt_tokens": 820, "completion_tokens": 420, "reasoning_tokens": 120, "total_tokens": 1240, "cost_usd": 0.00416 }
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 2524,
+            "completion_tokens": 2048,
+            "reasoning_tokens": 1603,
+            "total_tokens": 4572,
+            "cost_usd": 0.017336
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          }
         },
-        "total_tokens": 1240,
-        "total_cost_usd": 0.00416
+        "total_tokens": 4572,
+        "total_cost_usd": 0.017336,
+        "tavily_calls": 0
       }
     }
   },
   {
-    "event_id": "evt_cache_pyd_4",
-    "run_id": "run_cached_pydantic",
+    "event_id": "evt_0fa32619156e",
+    "run_id": "run_a5c5b3db6b",
+    "demo_id": "demo_pydantic",
+    "step": "RESEARCH",
+    "iteration": 0,
+    "max_iterations": 5,
+    "status": "running",
+    "message": "Querying Tavily Search API for 3 breaking change queries (preferred domains: docs.pydantic.dev, pydantic.dev)...",
+    "timestamp": "2026-10-29T11:10:15.184343+00:00",
+    "payload": {
+      "test_summary": null,
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
+    },
+    "telemetry": {
+      "current_tier": null,
+      "call_tokens": null,
+      "cumulative": {
+        "tiers": {
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 2524,
+            "completion_tokens": 2048,
+            "reasoning_tokens": 1603,
+            "total_tokens": 4572,
+            "cost_usd": 0.017336
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          }
+        },
+        "total_tokens": 4572,
+        "total_cost_usd": 0.017336,
+        "tavily_calls": 0
+      }
+    }
+  },
+  {
+    "event_id": "evt_cd6ab628a16f",
+    "run_id": "run_a5c5b3db6b",
     "demo_id": "demo_pydantic",
     "step": "RESEARCH",
     "iteration": 0,
     "max_iterations": 5,
     "status": "success",
-    "message": "Tavily search complete. Nemotron 3 Nano synthesized 4 migration rules.",
-    "timestamp": "2026-10-29T02:00:08Z",
+    "message": "Tavily search complete (3 live API calls). Nemotron 3 Nano synthesized 9 migration rules.",
+    "timestamp": "2026-10-29T11:10:36.891824+00:00",
     "payload": {
+      "test_summary": null,
       "research_findings": [
         {
           "query": "pydantic v2 migration guide regex pattern Field replacement",
-          "title": "Pydantic V2 Migration Guide - Deprecated Methods",
-          "source_url": "https://docs.pydantic.dev/2.0/migration/",
-          "note": "In Pydantic V2, .dict() is replaced by .model_dump(), .parse_obj() by .model_validate(), regex= in Field() by pattern=, and inner class Config by model_config = ConfigDict()."
+          "source_url": "https://pydantic.dev/docs/validation/latest/get-started/migration",
+          "title": "Migration Guide | Pydantic Docs",
+          "note": "Migrate field constraints by annotating the constrained type with\u202f`Annotated[<type>, Field(...)]` (e.g.,\u202f`list[Annotated[str, Field(pattern=\".\")]]`) and"
+        },
+        {
+          "query": "pydantic v2 migration guide regex pattern Field replacement",
+          "source_url": "https://pydantic.dev/docs/validation/2.3/get-started/migration",
+          "title": "Migration | Pydantic Docs",
+          "note": ""
+        },
+        {
+          "query": "pydantic v2 migration guide regex pattern Field replacement",
+          "source_url": "https://pydantic.dev/docs/validation/dev/concepts/fields",
+          "title": "Fields | Pydantic Docs",
+          "note": ""
+        },
+        {
+          "query": "pydantic v2 migration guide .dict() to .model_dump()",
+          "source_url": "https://pydantic.dev/docs/validation/latest/get-started/migration",
+          "title": "Migration Guide | Pydantic Docs",
+          "note": "Migrate by replacing every BaseModel method with its new `model_`\u2011prefixed version (e.g., `dict()` \u2192 `model_dump()`, `parse_obj()` \u2192 `model_validate()`, `construct()` \u2192 `model_construct()`,"
+        },
+        {
+          "query": "pydantic v2 migration guide .dict() to .model_dump()",
+          "source_url": "https://pydantic.dev/articles/pydantic-v2",
+          "title": "Introducing Pydantic v2 - Key Features",
+          "note": ""
+        },
+        {
+          "query": "pydantic v2 migration guide .dict() to .model_dump()",
+          "source_url": "https://pydantic.dev/docs/validation/2.3/usage/types/dicts_mapping",
+          "title": "Types/dicts mapping | Pydantic Docs",
+          "note": "Replace plain"
         },
         {
           "query": "pydantic v2 migration guide @validator to @field_validator",
-          "title": "Pydantic V2 Field and Validator Changes",
-          "source_url": "https://docs.pydantic.dev/latest/concepts/validators/",
-          "note": "Field validators require @field_validator with @classmethod and inspect info: ValidationInfo instead of values dict."
+          "source_url": "https://pydantic.dev/docs/validation/latest/get-started/migration",
+          "title": "Migration Guide | Pydantic Docs",
+          "note": "Replace each `@validator` with `@field_validator`, remove the `field`/`config` arguments from its signature, and instead annotate container types (e.g., `list[Annotated[int, Field(ge=0)]]`) to apply validation to individual items."
+        },
+        {
+          "query": "pydantic v2 migration guide @validator to @field_validator",
+          "source_url": "https://pydantic.dev/docs/validation/2.4/get-started/migration",
+          "title": "Migration | Pydantic Docs",
+          "note": "Replace every `@validator` decorator with `@field_validator` and, if you previously used `field` or `config` keyword arguments (or the now\u2011removed `each_item`), drop those arguments and instead express the validation logic via the function\u2019s signature or by annotating the relevant type with `Annotated[...]` metadata."
+        },
+        {
+          "query": "pydantic v2 migration guide @validator to @field_validator",
+          "source_url": "https://pydantic.dev/docs/validation/2.0/usage/validators",
+          "title": "Validators | Pydantic Docs",
+          "note": "Migrate every custom validation method to the new `@field_validator` decorator from\u202f`pydantic.functional_validators` in Pydantic\u202f2.0."
         }
-      ]
+      ],
+      "plan_markdown": null,
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
     },
     "telemetry": {
-      "current_tier": "nano",
-      "call_tokens": { "prompt_tokens": 340, "completion_tokens": 180, "reasoning_tokens": 0, "cost_usd": 0.00007 },
+      "current_tier": null,
+      "call_tokens": null,
       "cumulative": {
         "tiers": {
-          "ultra": { "tier": "ultra", "prompt_tokens": 820, "completion_tokens": 420, "reasoning_tokens": 120, "total_tokens": 1240, "cost_usd": 0.00416 },
-          "nano": { "tier": "nano", "prompt_tokens": 340, "completion_tokens": 180, "reasoning_tokens": 0, "total_tokens": 520, "cost_usd": 0.00007 }
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 2524,
+            "completion_tokens": 2048,
+            "reasoning_tokens": 1603,
+            "total_tokens": 4572,
+            "cost_usd": 0.017336
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 2771,
+            "completion_tokens": 2063,
+            "reasoning_tokens": 0,
+            "total_tokens": 4834,
+            "cost_usd": 0.000689
+          }
         },
-        "total_tokens": 1760,
-        "total_cost_usd": 0.00423
+        "total_tokens": 9406,
+        "total_cost_usd": 0.018025,
+        "tavily_calls": 3
       }
     }
   },
   {
-    "event_id": "evt_cache_pyd_5",
-    "run_id": "run_cached_pydantic",
+    "event_id": "evt_b631eefdbe3a",
+    "run_id": "run_a5c5b3db6b",
+    "demo_id": "demo_pydantic",
+    "step": "PATCHING",
+    "iteration": 1,
+    "max_iterations": 5,
+    "status": "running",
+    "message": "[Iteration 1/5] Nemotron 3 Super is generating code patches...",
+    "timestamp": "2026-10-29T11:10:36.892046+00:00",
+    "payload": {
+      "test_summary": null,
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
+    },
+    "telemetry": {
+      "current_tier": null,
+      "call_tokens": null,
+      "cumulative": {
+        "tiers": {
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 2524,
+            "completion_tokens": 2048,
+            "reasoning_tokens": 1603,
+            "total_tokens": 4572,
+            "cost_usd": 0.017336
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 2771,
+            "completion_tokens": 2063,
+            "reasoning_tokens": 0,
+            "total_tokens": 4834,
+            "cost_usd": 0.000689
+          }
+        },
+        "total_tokens": 9406,
+        "total_cost_usd": 0.018025,
+        "tavily_calls": 3
+      }
+    }
+  },
+  {
+    "event_id": "evt_1a3c16ffd364",
+    "run_id": "run_a5c5b3db6b",
     "demo_id": "demo_pydantic",
     "step": "PATCHING",
     "iteration": 1,
     "max_iterations": 5,
     "status": "success",
-    "message": "Applied 5 patch edits: modernized imports, regex -> pattern, ConfigDict, and field_validator.",
-    "timestamp": "2026-10-29T02:00:12Z",
+    "message": "Applied 1 patch edits.",
+    "timestamp": "2026-10-29T11:10:52.791708+00:00",
     "payload": {
+      "test_summary": null,
+      "research_findings": null,
+      "plan_markdown": null,
       "patches": [
-        { "file": "order_service.py", "search": "regex=r\"^\\d{5}(-\\d{4})?$\"", "replace": "pattern=r\"^\\d{5}(-\\d{4})?$\"", "explanation": "v2 pattern rename" }
+        {
+          "file": "order_service.py",
+          "search": "*",
+          "replace": "\"\"\"E-Commerce Order & Inventory Service written with Pydantic v2.\n\nDemonstrates modern Pydantic v2 patterns:\n- @field_validator and @model_validator\n- model_config = ConfigDict(...)\n- Field(..., pattern=...)\n- .model_dump() and .model_validate()\n\"\"\"\n\nimport re\nfrom typing import Dict, List, Optional, Self\nfrom pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator\n\n\nclass Address(BaseModel):\n    \"\"\"Customer shipping address using v2 pattern validation.\"\"\"\n\n    street: str\n    city: str\n    state: str\n    zip_code: str = Field(..., pattern=r\"^\\d{5}(-\\d{4})?$\")\n\n    model_config = ConfigDict(str_strip_whitespace=True)\n\n\nclass User(BaseModel):\n    \"\"\"Customer profile model using v2 field validators and from_attributes.\"\"\"\n\n    user_id: int\n    username: str\n    email: str\n    is_active: bool = True\n\n    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)\n\n    @field_validator(\"username\")\n    @classmethod\n    def validate_username(cls, v: str) -> str:\n        if len(v) < 3:\n            raise ValueError(\"username must be at least 3 characters\")\n        if not re.match(r\"^[a-zA-Z0-9_]+$\", v):\n            raise ValueError(\"username can only contain alphanumeric characters and underscores\")\n        return v.lower()\n\n    @field_validator(\"email\")\n    @classmethod\n    def validate_email(cls, v: str) -> str:\n        if \"@\" not in v or \".\" not in v.split(\"@\")[-1]:\n            raise ValueError(\"invalid email format\")\n        return v.lower()\n\n\nclass OrderItem(BaseModel):\n    \"\"\"Single item in an order.\"\"\"\n\n    sku: str\n    title: str\n    quantity: int = Field(..., gt=0)\n    unit_price: float = Field(..., gt=0.0)\n\n    @field_validator(\"sku\")\n    @classmethod\n    def validate_sku(cls, v: str) -> str:\n        v = v.upper().strip()\n        if not v.startswith(\"SKU-\"):\n            raise ValueError(\"sku must start with SKU-\")\n        return v\n\n\nclass Order(BaseModel):\n    \"\"\"Customer purchase order with cross-field model validator and assignment validation.\"\"\"\n\n    order_id: str\n    customer: User\n    shipping_address: Address\n    items: List[OrderItem]\n    discount_pct: float = Field(0.0, ge=0.0, le=100.0)\n    total_amount: float = 0.0\n    internal_notes: Optional[str] = None\n    status: str = \"pending\"\n\n    model_config = ConfigDict(validate_assignment=True)\n\n    @model_validator(mode='after')\n    def compute_and_verify_total(self) -> Self:\n        items = self.items or []\n        subtotal = sum(item.quantity * item.unit_price for item in items)\n        discount = self.discount_pct\n        object.__setattr__(\n            self,\n            'total_amount',\n            round(subtotal * (1.0 - (discount / 100.0)), 2)\n        )\n        return self\n\n\nclass OrderService:\n    \"\"\"Business operations for orders.\"\"\"\n\n    @staticmethod\n    def register_customer(payload: dict) -> User:\n        \"\"\"Parse raw dictionary into User model using v2 model_validate.\"\"\"\n        return User.model_validate(payload)\n\n    @staticmethod\n    def export_customer_dict(user: User) -> dict:\n        \"\"\"Serialize user to dict using v2 model_dump.\"\"\"\n        return user.model_dump()\n\n    @staticmethod\n    def create_order(payload: dict) -> Order:\n        \"\"\"Parse complete order hierarchy using v2 model_validate.\"\"\"\n        return Order.model_validate(payload)\n\n    @staticmethod\n    def export_order_summary(order: Order, exclude_internal: bool = True) -> dict:\n        \"\"\"Export order dictionary with excluded internal fields using v2 model_dump.\"\"\"\n        excludes = {\"internal_notes\"} if exclude_internal else set()\n        return order.model_dump(exclude=excludes)\n\n    @staticmethod\n    def apply_discount(order: Order, discount: float) -> Order:\n        \"\"\"Update discount; relies on validate_assignment to guard bounds.\"\"\"\n        order.discount_pct = discount\n        # Recalculate total using object.__setattr__ to avoid validation recursion\n        subtotal = sum(item.quantity * item.unit_price for item in order.items)\n        object.__setattr__(\n            order,\n            'total_amount',\n            round(subtotal * (1.0 - (discount / 100.0)), 2)\n        )\n        return order",
+          "explanation": "Full file extracted from markdown code block"
+        }
       ],
-      "diff": "--- a/order_service.py\n+++ b/order_service.py\n@@ -9,7 +9,7 @@\n-from pydantic import BaseModel, Field, ValidationError, root_validator, validator\n+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator, ConfigDict\n@@ -21,3 +21,3 @@\n-    zip_code: str = Field(..., regex=r\"^\\d{5}(-\\d{4})?$\")\n+    zip_code: str = Field(..., pattern=r\"^\\d{5}(-\\d{4})?$\")\n-    class Config:\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(str_strip_whitespace=True)\n"
+      "diff": "--- a/order_service.py\n+++ b/order_service.py\n@@ -1,42 +1,40 @@\n-\"\"\"E-Commerce Order & Inventory Service written with Pydantic v1.\n+\"\"\"E-Commerce Order & Inventory Service written with Pydantic v2.\n \n-Demonstrates classic Pydantic v1 patterns:\n-- @validator and @root_validator\n-- class Config (orm_mode, anystr_strip_whitespace, validate_assignment)\n-- Field(..., regex=...)\n-- .dict() and .parse_obj()\n+Demonstrates modern Pydantic v2 patterns:\n+- @field_validator and @model_validator\n+- model_config = ConfigDict(...)\n+- Field(..., pattern=...)\n+- .model_dump() and .model_validate()\n \"\"\"\n \n import re\n-from typing import Dict, List, Optional\n-from pydantic import BaseModel, Field, ValidationError, root_validator, validator\n+from typing import Dict, List, Optional, Self\n+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator\n \n \n class Address(BaseModel):\n-    \"\"\"Customer shipping address using v1 regex validation.\"\"\"\n+    \"\"\"Customer shipping address using v2 pattern validation.\"\"\"\n \n     street: str\n     city: str\n     state: str\n-    zip_code: str = Field(..., regex=r\"^\\d{5}(-\\d{4})?$\")\n+    zip_code: str = Field(..., pattern=r\"^\\d{5}(-\\d{4})?$\")\n \n-    class Config:\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(str_strip_whitespace=True)\n \n \n class User(BaseModel):\n-    \"\"\"Customer profile model using v1 @validator and orm_mode.\"\"\"\n+    \"\"\"Customer profile model using v2 field validators and from_attributes.\"\"\"\n \n     user_id: int\n     username: str\n     email: str\n     is_active: bool = True\n \n-    class Config:\n-        orm_mode = True\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)\n \n-    @validator(\"username\")\n+    @field_validator(\"username\")\n+    @classmethod\n     def validate_username(cls, v: str) -> str:\n         if len(v) < 3:\n             raise ValueError(\"username must be at least 3 characters\")\n@@ -44,7 +42,8 @@\n             raise ValueError(\"username can only contain alphanumeric characters and underscores\")\n         return v.lower()\n \n-    @validator(\"email\")\n+    @field_validator(\"email\")\n+    @classmethod\n     def validate_email(cls, v: str) -> str:\n         if \"@\" not in v or \".\" not in v.split(\"@\")[-1]:\n             raise ValueError(\"invalid email format\")\n@@ -59,7 +58,8 @@\n     quantity: int = Field(..., gt=0)\n     unit_price: float = Field(..., gt=0.0)\n \n-    @validator(\"sku\")\n+    @field_validator(\"sku\")\n+    @classmethod\n     def validate_sku(cls, v: str) -> str:\n         v = v.upper().strip()\n         if not v.startswith(\"SKU-\"):\n@@ -68,7 +68,7 @@\n \n \n class Order(BaseModel):\n-    \"\"\"Customer purchase order with cross-field root validator and assignment validation.\"\"\"\n+    \"\"\"Customer purchase order with cross-field model validator and assignment validation.\"\"\"\n \n     order_id: str\n     customer: User\n@@ -79,16 +79,19 @@\n     internal_notes: Optional[str] = None\n     status: str = \"pending\"\n \n-    class Config:\n-        validate_assignment = True\n+    model_config = ConfigDict(validate_assignment=True)\n \n-    @root_validator\n-    def compute_and_verify_total(cls, values: Dict) -> Dict:\n-        items = values.get(\"items\") or []\n+    @model_validator(mode='after')\n+    def compute_and_verify_total(self) -> Self:\n+        items = self.items or []\n         subtotal = sum(item.quantity * item.unit_price for item in items)\n-        discount = values.get(\"discount_pct\", 0.0)\n-        values[\"total_amount\"] = round(subtotal * (1.0 - (discount / 100.0)), 2)\n-        return values\n+        discount = self.discount_pct\n+        object.__setattr__(\n+            self,\n+            'total_amount',\n+            round(subtotal * (1.0 - (discount / 100.0)), 2)\n+        )\n+        return self\n \n \n class OrderService:\n@@ -96,30 +99,34 @@\n \n     @staticmethod\n     def register_customer(payload: dict) -> User:\n-        \"\"\"Parse raw dictionary into User model using v1 parse_obj.\"\"\"\n-        return User.parse_obj(payload)\n+        \"\"\"Parse raw dictionary into User model using v2 model_validate.\"\"\"\n+        return User.model_validate(payload)\n \n     @staticmethod\n     def export_customer_dict(user: User) -> dict:\n-        \"\"\"Serialize user to dict using v1 .dict().\"\"\"\n-        return user.dict()\n+        \"\"\"Serialize user to dict using v2 model_dump.\"\"\"\n+        return user.model_dump()\n \n     @staticmethod\n     def create_order(payload: dict) -> Order:\n-        \"\"\"Parse complete order hierarchy using v1 parse_obj.\"\"\"\n-        return Order.parse_obj(payload)\n+        \"\"\"Parse complete order hierarchy using v2 model_validate.\"\"\"\n+        return Order.model_validate(payload)\n \n     @staticmethod\n     def export_order_summary(order: Order, exclude_internal: bool = True) -> dict:\n-        \"\"\"Export order dictionary with excluded internal fields using v1 .dict().\"\"\"\n+        \"\"\"Export order dictionary with excluded internal fields using v2 model_dump.\"\"\"\n         excludes = {\"internal_notes\"} if exclude_internal else set()\n-        return order.dict(exclude=excludes)\n+        return order.model_dump(exclude=excludes)\n \n     @staticmethod\n     def apply_discount(order: Order, discount: float) -> Order:\n         \"\"\"Update discount; relies on validate_assignment to guard bounds.\"\"\"\n         order.discount_pct = discount\n-        # Recalculate total\n+        # Recalculate total using object.__setattr__ to avoid validation recursion\n         subtotal = sum(item.quantity * item.unit_price for item in order.items)\n-        order.total_amount = round(subtotal * (1.0 - (discount / 100.0)), 2)\n-        return order\n+        object.__setattr__(\n+            order,\n+            'total_amount',\n+            round(subtotal * (1.0 - (discount / 100.0)), 2)\n+        )\n+        return order",
+      "pr_summary": null
     },
     "telemetry": {
       "current_tier": "super",
-      "call_tokens": { "prompt_tokens": 1650, "completion_tokens": 540, "reasoning_tokens": 310, "cost_usd": 0.001962 },
+      "call_tokens": {
+        "prompt_tokens": 4092,
+        "completion_tokens": 3021,
+        "reasoning_tokens": 2007,
+        "cost_usd": 0.007893
+      },
       "cumulative": {
         "tiers": {
-          "ultra": { "tier": "ultra", "prompt_tokens": 820, "completion_tokens": 420, "reasoning_tokens": 120, "total_tokens": 1240, "cost_usd": 0.00416 },
-          "super": { "tier": "super", "prompt_tokens": 1650, "completion_tokens": 540, "reasoning_tokens": 310, "total_tokens": 2190, "cost_usd": 0.001962 },
-          "nano": { "tier": "nano", "prompt_tokens": 340, "completion_tokens": 180, "reasoning_tokens": 0, "total_tokens": 520, "cost_usd": 0.00007 }
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 2524,
+            "completion_tokens": 2048,
+            "reasoning_tokens": 1603,
+            "total_tokens": 4572,
+            "cost_usd": 0.017336
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 4092,
+            "completion_tokens": 3021,
+            "reasoning_tokens": 2007,
+            "total_tokens": 7113,
+            "cost_usd": 0.007893
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 2771,
+            "completion_tokens": 2063,
+            "reasoning_tokens": 0,
+            "total_tokens": 4834,
+            "cost_usd": 0.000689
+          }
         },
-        "total_tokens": 3950,
-        "total_cost_usd": 0.006192
+        "total_tokens": 16519,
+        "total_cost_usd": 0.025918,
+        "tavily_calls": 3
       }
     }
   },
   {
-    "event_id": "evt_cache_pyd_6",
-    "run_id": "run_cached_pydantic",
+    "event_id": "evt_4d60e87d1e8c",
+    "run_id": "run_a5c5b3db6b",
+    "demo_id": "demo_pydantic",
+    "step": "VERIFYING",
+    "iteration": 1,
+    "max_iterations": 5,
+    "status": "running",
+    "message": "[Iteration 1/5] Running sandbox pytest suite...",
+    "timestamp": "2026-10-29T11:10:52.792010+00:00",
+    "payload": {
+      "test_summary": null,
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
+    },
+    "telemetry": {
+      "current_tier": null,
+      "call_tokens": null,
+      "cumulative": {
+        "tiers": {
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 2524,
+            "completion_tokens": 2048,
+            "reasoning_tokens": 1603,
+            "total_tokens": 4572,
+            "cost_usd": 0.017336
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 4092,
+            "completion_tokens": 3021,
+            "reasoning_tokens": 2007,
+            "total_tokens": 7113,
+            "cost_usd": 0.007893
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 2771,
+            "completion_tokens": 2063,
+            "reasoning_tokens": 0,
+            "total_tokens": 4834,
+            "cost_usd": 0.000689
+          }
+        },
+        "total_tokens": 16519,
+        "total_cost_usd": 0.025918,
+        "tavily_calls": 3
+      }
+    }
+  },
+  {
+    "event_id": "evt_cb515d0e35a3",
+    "run_id": "run_a5c5b3db6b",
     "demo_id": "demo_pydantic",
     "step": "VERIFYING",
     "iteration": 1,
     "max_iterations": 5,
     "status": "success",
     "message": "Test run completed: 10 passed, 0 failed out of 10.",
-    "timestamp": "2026-10-29T02:00:15Z",
+    "timestamp": "2026-10-29T11:10:53.025526+00:00",
     "payload": {
       "test_summary": {
         "total": 10,
         "passed": 10,
         "failed": 0,
-        "failed_test_names": []
-      }
+        "failed_test_names": [],
+        "output_tail": ""
+      },
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": "--- a/order_service.py\n+++ b/order_service.py\n@@ -1,42 +1,40 @@\n-\"\"\"E-Commerce Order & Inventory Service written with Pydantic v1.\n+\"\"\"E-Commerce Order & Inventory Service written with Pydantic v2.\n \n-Demonstrates classic Pydantic v1 patterns:\n-- @validator and @root_validator\n-- class Config (orm_mode, anystr_strip_whitespace, validate_assignment)\n-- Field(..., regex=...)\n-- .dict() and .parse_obj()\n+Demonstrates modern Pydantic v2 patterns:\n+- @field_validator and @model_validator\n+- model_config = ConfigDict(...)\n+- Field(..., pattern=...)\n+- .model_dump() and .model_validate()\n \"\"\"\n \n import re\n-from typing import Dict, List, Optional\n-from pydantic import BaseModel, Field, ValidationError, root_validator, validator\n+from typing import Dict, List, Optional, Self\n+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator\n \n \n class Address(BaseModel):\n-    \"\"\"Customer shipping address using v1 regex validation.\"\"\"\n+    \"\"\"Customer shipping address using v2 pattern validation.\"\"\"\n \n     street: str\n     city: str\n     state: str\n-    zip_code: str = Field(..., regex=r\"^\\d{5}(-\\d{4})?$\")\n+    zip_code: str = Field(..., pattern=r\"^\\d{5}(-\\d{4})?$\")\n \n-    class Config:\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(str_strip_whitespace=True)\n \n \n class User(BaseModel):\n-    \"\"\"Customer profile model using v1 @validator and orm_mode.\"\"\"\n+    \"\"\"Customer profile model using v2 field validators and from_attributes.\"\"\"\n \n     user_id: int\n     username: str\n     email: str\n     is_active: bool = True\n \n-    class Config:\n-        orm_mode = True\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)\n \n-    @validator(\"username\")\n+    @field_validator(\"username\")\n+    @classmethod\n     def validate_username(cls, v: str) -> str:\n         if len(v) < 3:\n             raise ValueError(\"username must be at least 3 characters\")\n@@ -44,7 +42,8 @@\n             raise ValueError(\"username can only contain alphanumeric characters and underscores\")\n         return v.lower()\n \n-    @validator(\"email\")\n+    @field_validator(\"email\")\n+    @classmethod\n     def validate_email(cls, v: str) -> str:\n         if \"@\" not in v or \".\" not in v.split(\"@\")[-1]:\n             raise ValueError(\"invalid email format\")\n@@ -59,7 +58,8 @@\n     quantity: int = Field(..., gt=0)\n     unit_price: float = Field(..., gt=0.0)\n \n-    @validator(\"sku\")\n+    @field_validator(\"sku\")\n+    @classmethod\n     def validate_sku(cls, v: str) -> str:\n         v = v.upper().strip()\n         if not v.startswith(\"SKU-\"):\n@@ -68,7 +68,7 @@\n \n \n class Order(BaseModel):\n-    \"\"\"Customer purchase order with cross-field root validator and assignment validation.\"\"\"\n+    \"\"\"Customer purchase order with cross-field model validator and assignment validation.\"\"\"\n \n     order_id: str\n     customer: User\n@@ -79,16 +79,19 @@\n     internal_notes: Optional[str] = None\n     status: str = \"pending\"\n \n-    class Config:\n-        validate_assignment = True\n+    model_config = ConfigDict(validate_assignment=True)\n \n-    @root_validator\n-    def compute_and_verify_total(cls, values: Dict) -> Dict:\n-        items = values.get(\"items\") or []\n+    @model_validator(mode='after')\n+    def compute_and_verify_total(self) -> Self:\n+        items = self.items or []\n         subtotal = sum(item.quantity * item.unit_price for item in items)\n-        discount = values.get(\"discount_pct\", 0.0)\n-        values[\"total_amount\"] = round(subtotal * (1.0 - (discount / 100.0)), 2)\n-        return values\n+        discount = self.discount_pct\n+        object.__setattr__(\n+            self,\n+            'total_amount',\n+            round(subtotal * (1.0 - (discount / 100.0)), 2)\n+        )\n+        return self\n \n \n class OrderService:\n@@ -96,30 +99,34 @@\n \n     @staticmethod\n     def register_customer(payload: dict) -> User:\n-        \"\"\"Parse raw dictionary into User model using v1 parse_obj.\"\"\"\n-        return User.parse_obj(payload)\n+        \"\"\"Parse raw dictionary into User model using v2 model_validate.\"\"\"\n+        return User.model_validate(payload)\n \n     @staticmethod\n     def export_customer_dict(user: User) -> dict:\n-        \"\"\"Serialize user to dict using v1 .dict().\"\"\"\n-        return user.dict()\n+        \"\"\"Serialize user to dict using v2 model_dump.\"\"\"\n+        return user.model_dump()\n \n     @staticmethod\n     def create_order(payload: dict) -> Order:\n-        \"\"\"Parse complete order hierarchy using v1 parse_obj.\"\"\"\n-        return Order.parse_obj(payload)\n+        \"\"\"Parse complete order hierarchy using v2 model_validate.\"\"\"\n+        return Order.model_validate(payload)\n \n     @staticmethod\n     def export_order_summary(order: Order, exclude_internal: bool = True) -> dict:\n-        \"\"\"Export order dictionary with excluded internal fields using v1 .dict().\"\"\"\n+        \"\"\"Export order dictionary with excluded internal fields using v2 model_dump.\"\"\"\n         excludes = {\"internal_notes\"} if exclude_internal else set()\n-        return order.dict(exclude=excludes)\n+        return order.model_dump(exclude=excludes)\n \n     @staticmethod\n     def apply_discount(order: Order, discount: float) -> Order:\n         \"\"\"Update discount; relies on validate_assignment to guard bounds.\"\"\"\n         order.discount_pct = discount\n-        # Recalculate total\n+        # Recalculate total using object.__setattr__ to avoid validation recursion\n         subtotal = sum(item.quantity * item.unit_price for item in order.items)\n-        order.total_amount = round(subtotal * (1.0 - (discount / 100.0)), 2)\n-        return order\n+        object.__setattr__(\n+            order,\n+            'total_amount',\n+            round(subtotal * (1.0 - (discount / 100.0)), 2)\n+        )\n+        return order",
+      "pr_summary": null
     },
-    "telemetry": {}
+    "telemetry": {
+      "current_tier": null,
+      "call_tokens": null,
+      "cumulative": {
+        "tiers": {
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 2524,
+            "completion_tokens": 2048,
+            "reasoning_tokens": 1603,
+            "total_tokens": 4572,
+            "cost_usd": 0.017336
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 4092,
+            "completion_tokens": 3021,
+            "reasoning_tokens": 2007,
+            "total_tokens": 7113,
+            "cost_usd": 0.007893
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 2771,
+            "completion_tokens": 2063,
+            "reasoning_tokens": 0,
+            "total_tokens": 4834,
+            "cost_usd": 0.000689
+          }
+        },
+        "total_tokens": 16519,
+        "total_cost_usd": 0.025918,
+        "tavily_calls": 3
+      }
+    }
   },
   {
-    "event_id": "evt_cache_pyd_7",
-    "run_id": "run_cached_pydantic",
+    "event_id": "evt_bd54fdf8d059",
+    "run_id": "run_a5c5b3db6b",
     "demo_id": "demo_pydantic",
     "step": "REVIEW",
-    "iteration": 1,
+    "iteration": 0,
     "max_iterations": 5,
     "status": "running",
     "message": "Nemotron 3 Ultra is reviewing the final diff and generating the PR summary...",
-    "timestamp": "2026-10-29T02:00:16Z",
-    "payload": {},
-    "telemetry": {}
+    "timestamp": "2026-10-29T11:10:53.026675+00:00",
+    "payload": {
+      "test_summary": null,
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": null,
+      "pr_summary": null
+    },
+    "telemetry": {
+      "current_tier": null,
+      "call_tokens": null,
+      "cumulative": {
+        "tiers": {
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 2524,
+            "completion_tokens": 2048,
+            "reasoning_tokens": 1603,
+            "total_tokens": 4572,
+            "cost_usd": 0.017336
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 4092,
+            "completion_tokens": 3021,
+            "reasoning_tokens": 2007,
+            "total_tokens": 7113,
+            "cost_usd": 0.007893
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 2771,
+            "completion_tokens": 2063,
+            "reasoning_tokens": 0,
+            "total_tokens": 4834,
+            "cost_usd": 0.000689
+          }
+        },
+        "total_tokens": 16519,
+        "total_cost_usd": 0.025918,
+        "tavily_calls": 3
+      }
+    }
   },
   {
-    "event_id": "evt_cache_pyd_8",
-    "run_id": "run_cached_pydantic",
+    "event_id": "evt_aabfbb63b003",
+    "run_id": "run_a5c5b3db6b",
     "demo_id": "demo_pydantic",
     "step": "COMPLETED",
     "iteration": 1,
     "max_iterations": 5,
     "status": "success",
     "message": "Migration succeeded in 1 iteration(s). Final tests: 10/10 passed.",
-    "timestamp": "2026-10-29T02:00:18Z",
+    "timestamp": "2026-10-29T11:10:58.980680+00:00",
     "payload": {
-      "diff": "--- a/order_service.py\n+++ b/order_service.py\n@@ -9,7 +9,7 @@\n import re\n from typing import Dict, List, Optional\n-from pydantic import BaseModel, Field, ValidationError, root_validator, validator\n+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator, ConfigDict\n \n \n class Address(BaseModel):\n@@ -21,3 +21,3 @@\n-    zip_code: str = Field(..., regex=r\"^\\d{5}(-\\d{4})?$\")\n+    zip_code: str = Field(..., pattern=r\"^\\d{5}(-\\d{4})?$\")\n-    class Config:\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(str_strip_whitespace=True)\n@@ -34,3 +34,3 @@\n-    class Config:\n-        orm_mode = True\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)\n@@ -40,3 +40,4 @@\n-    @validator(\"username\")\n+    @field_validator(\"username\")\n+    @classmethod\n     def validate_username(cls, v: str) -> str:\n@@ -48,3 +49,4 @@\n-    @validator(\"email\")\n+    @field_validator(\"email\")\n+    @classmethod\n     def validate_email(cls, v: str) -> str:\n@@ -66,3 +68,4 @@\n-    @validator(\"sku\")\n+    @field_validator(\"sku\")\n+    @classmethod\n     def validate_sku(cls, v: str) -> str:\n@@ -83,3 +86,3 @@\n-    class Config:\n-        validate_assignment = True\n+    model_config = ConfigDict(validate_assignment=True)\n@@ -87,2 +90,3 @@\n-    @root_validator\n-    def compute_and_verify_total(cls, values: Dict) -> Dict:\n+    @model_validator(mode=\"after\")\n+    def compute_and_verify_total(self) -> \"Order\":\n+        subtotal = sum(item.quantity * item.unit_price for item in self.items)\n+        discount = self.discount_pct or 0.0\n+        self.total_amount = round(subtotal * (1.0 - (discount / 100.0)), 2)\n+        return self\n@@ -102,2 +106,2 @@\n-    def register_customer(payload: dict) -> User:\n-        return User.parse_obj(payload)\n+    def register_customer(payload: dict) -> User:\n+        return User.model_validate(payload)\n@@ -107,2 +111,2 @@\n-    def export_customer_dict(user: User) -> dict:\n-        return user.dict()\n+    def export_customer_dict(user: User) -> dict:\n+        return user.model_dump()\n@@ -112,2 +116,2 @@\n-    def create_order(payload: dict) -> Order:\n-        return Order.parse_obj(payload)\n+    def create_order(payload: dict) -> Order:\n+        return Order.model_validate(payload)\n@@ -117,3 +121,3 @@\n-    def export_order_summary(order: Order, exclude_internal: bool = True) -> dict:\n-        excludes = {\"internal_notes\"} if exclude_internal else set()\n-        return order.dict(exclude=excludes)\n+    def export_order_summary(order: Order, exclude_internal: bool = True) -> dict:\n+        excludes = {\"internal_notes\"} if exclude_internal else set()\n+        return order.model_dump(exclude=excludes)\n",
-      "pr_summary": "## Pydantic v1 → v2 Migration: Order Service Models\n\n### Executive Summary\nThis PR migrates `order_service.py` to Pydantic v2 core APIs. All 10 unit and integration tests are verified passing.\n\n### Breaking Changes Addressed\n- **Field Constraints**: Renamed `regex=` to `pattern=` on `Address.zip_code`.\n- **Configuration**: Replaced inner `class Config` across all models with modern `model_config = ConfigDict(...)` (`orm_mode` → `from_attributes`, `anystr_strip_whitespace` → `str_strip_whitespace`).\n- **Field Validators**: Converted `@validator` decorators to `@field_validator` with `@classmethod`.\n- **Root Validator**: Migrated `@root_validator` to `@model_validator(mode=\"after\")`.\n- **Parsing & Serialization**: Migrated `.dict()` → `.model_dump()` and `.parse_obj()` → `.model_validate()`.\n\n### Verification\n- **Pytest**: 10 passed, 0 failed in 0.48s in isolated local-wheelhouse sandbox.\n\n### Official Documentation Used\n- [Pydantic V2 Migration Guide](https://docs.pydantic.dev/2.0/migration/)\n- [Pydantic V2 Validators Concept](https://docs.pydantic.dev/latest/concepts/validators/)",
       "test_summary": {
         "total": 10,
         "passed": 10,
         "failed": 0,
-        "failed_test_names": []
-      }
+        "failed_test_names": [],
+        "output_tail": ""
+      },
+      "research_findings": null,
+      "plan_markdown": null,
+      "patches": null,
+      "diff": "--- a/order_service.py\n+++ b/order_service.py\n@@ -1,42 +1,40 @@\n-\"\"\"E-Commerce Order & Inventory Service written with Pydantic v1.\n+\"\"\"E-Commerce Order & Inventory Service written with Pydantic v2.\n \n-Demonstrates classic Pydantic v1 patterns:\n-- @validator and @root_validator\n-- class Config (orm_mode, anystr_strip_whitespace, validate_assignment)\n-- Field(..., regex=...)\n-- .dict() and .parse_obj()\n+Demonstrates modern Pydantic v2 patterns:\n+- @field_validator and @model_validator\n+- model_config = ConfigDict(...)\n+- Field(..., pattern=...)\n+- .model_dump() and .model_validate()\n \"\"\"\n \n import re\n-from typing import Dict, List, Optional\n-from pydantic import BaseModel, Field, ValidationError, root_validator, validator\n+from typing import Dict, List, Optional, Self\n+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator\n \n \n class Address(BaseModel):\n-    \"\"\"Customer shipping address using v1 regex validation.\"\"\"\n+    \"\"\"Customer shipping address using v2 pattern validation.\"\"\"\n \n     street: str\n     city: str\n     state: str\n-    zip_code: str = Field(..., regex=r\"^\\d{5}(-\\d{4})?$\")\n+    zip_code: str = Field(..., pattern=r\"^\\d{5}(-\\d{4})?$\")\n \n-    class Config:\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(str_strip_whitespace=True)\n \n \n class User(BaseModel):\n-    \"\"\"Customer profile model using v1 @validator and orm_mode.\"\"\"\n+    \"\"\"Customer profile model using v2 field validators and from_attributes.\"\"\"\n \n     user_id: int\n     username: str\n     email: str\n     is_active: bool = True\n \n-    class Config:\n-        orm_mode = True\n-        anystr_strip_whitespace = True\n+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)\n \n-    @validator(\"username\")\n+    @field_validator(\"username\")\n+    @classmethod\n     def validate_username(cls, v: str) -> str:\n         if len(v) < 3:\n             raise ValueError(\"username must be at least 3 characters\")\n@@ -44,7 +42,8 @@\n             raise ValueError(\"username can only contain alphanumeric characters and underscores\")\n         return v.lower()\n \n-    @validator(\"email\")\n+    @field_validator(\"email\")\n+    @classmethod\n     def validate_email(cls, v: str) -> str:\n         if \"@\" not in v or \".\" not in v.split(\"@\")[-1]:\n             raise ValueError(\"invalid email format\")\n@@ -59,7 +58,8 @@\n     quantity: int = Field(..., gt=0)\n     unit_price: float = Field(..., gt=0.0)\n \n-    @validator(\"sku\")\n+    @field_validator(\"sku\")\n+    @classmethod\n     def validate_sku(cls, v: str) -> str:\n         v = v.upper().strip()\n         if not v.startswith(\"SKU-\"):\n@@ -68,7 +68,7 @@\n \n \n class Order(BaseModel):\n-    \"\"\"Customer purchase order with cross-field root validator and assignment validation.\"\"\"\n+    \"\"\"Customer purchase order with cross-field model validator and assignment validation.\"\"\"\n \n     order_id: str\n     customer: User\n@@ -79,16 +79,19 @@\n     internal_notes: Optional[str] = None\n     status: str = \"pending\"\n \n-    class Config:\n-        validate_assignment = True\n+    model_config = ConfigDict(validate_assignment=True)\n \n-    @root_validator\n-    def compute_and_verify_total(cls, values: Dict) -> Dict:\n-        items = values.get(\"items\") or []\n+    @model_validator(mode='after')\n+    def compute_and_verify_total(self) -> Self:\n+        items = self.items or []\n         subtotal = sum(item.quantity * item.unit_price for item in items)\n-        discount = values.get(\"discount_pct\", 0.0)\n-        values[\"total_amount\"] = round(subtotal * (1.0 - (discount / 100.0)), 2)\n-        return values\n+        discount = self.discount_pct\n+        object.__setattr__(\n+            self,\n+            'total_amount',\n+            round(subtotal * (1.0 - (discount / 100.0)), 2)\n+        )\n+        return self\n \n \n class OrderService:\n@@ -96,30 +99,34 @@\n \n     @staticmethod\n     def register_customer(payload: dict) -> User:\n-        \"\"\"Parse raw dictionary into User model using v1 parse_obj.\"\"\"\n-        return User.parse_obj(payload)\n+        \"\"\"Parse raw dictionary into User model using v2 model_validate.\"\"\"\n+        return User.model_validate(payload)\n \n     @staticmethod\n     def export_customer_dict(user: User) -> dict:\n-        \"\"\"Serialize user to dict using v1 .dict().\"\"\"\n-        return user.dict()\n+        \"\"\"Serialize user to dict using v2 model_dump.\"\"\"\n+        return user.model_dump()\n \n     @staticmethod\n     def create_order(payload: dict) -> Order:\n-        \"\"\"Parse complete order hierarchy using v1 parse_obj.\"\"\"\n-        return Order.parse_obj(payload)\n+        \"\"\"Parse complete order hierarchy using v2 model_validate.\"\"\"\n+        return Order.model_validate(payload)\n \n     @staticmethod\n     def export_order_summary(order: Order, exclude_internal: bool = True) -> dict:\n-        \"\"\"Export order dictionary with excluded internal fields using v1 .dict().\"\"\"\n+        \"\"\"Export order dictionary with excluded internal fields using v2 model_dump.\"\"\"\n         excludes = {\"internal_notes\"} if exclude_internal else set()\n-        return order.dict(exclude=excludes)\n+        return order.model_dump(exclude=excludes)\n \n     @staticmethod\n     def apply_discount(order: Order, discount: float) -> Order:\n         \"\"\"Update discount; relies on validate_assignment to guard bounds.\"\"\"\n         order.discount_pct = discount\n-        # Recalculate total\n+        # Recalculate total using object.__setattr__ to avoid validation recursion\n         subtotal = sum(item.quantity * item.unit_price for item in order.items)\n-        order.total_amount = round(subtotal * (1.0 - (discount / 100.0)), 2)\n-        return order\n+        object.__setattr__(\n+            order,\n+            'total_amount',\n+            round(subtotal * (1.0 - (discount / 100.0)), 2)\n+        )\n+        return order",
+      "pr_summary": "# PR: Migrate Order Service from Pydantic v1 to v2\n\n## Executive Summary\n\nThis PR completes the migration of the **E-Commerce Order & Inventory Service** from Pydantic v1 to Pydantic v2. The migration addresses all breaking API changes introduced in v2 while preserving existing validation logic, serialization behavior, and public service contracts. All 10 existing tests pass without modification.\n\n**Impact Surface**: 4 model classes (`Address`, `User`, `OrderItem`, `Order`), 1 service class (`OrderService`), and 6 public methods. Zero database/schema migrations required.\n\n---\n\n## Breaking Changes Addressed\n\n| v1 API | v2 Replacement | Migration Status |\n|--------|----------------|------------------|\n| `@validator` / `@root_validator` | `@field_validator` / `@model_validator` | \u2705 Complete |\n| `class Config` (inner class) | `model_config = ConfigDict(...)` | \u2705 Complete |\n| `Field(..., regex=...)` | `Field(..., pattern=...)` | \u2705 Complete |\n| `orm_mode` | `from_attributes` | \u2705 Complete |\n| `anystr_strip_whitespace` | `str_strip_whitespace` | \u2705 Complete |\n| `.parse_obj()` | `.model_validate()` | \u2705 Complete |\n| `.dict()` | `.model_dump()` | \u2705 Complete |\n| `validate_assignment` (Config) | `validate_assignment` (ConfigDict) | \u2705 Preserved |\n\n---\n\n## Detailed Code Changes\n\n### 1. `Address` \u2014 Field Pattern & Config Modernization\n```diff\n- zip_code: str = Field(..., regex=r\"^\\d{5}(-\\d{4})?$\")\n+ zip_code: str = Field(..., pattern=r\"^\\d{5}(-\\d{4})?$\")\n\n- class Config:\n-     anystr_strip_whitespace = True\n+ model_config = ConfigDict(str_strip_whitespace=True)\n```\n- `regex` \u2192 `pattern` (alias, identical regex engine).\n- `anystr_strip_whitespace` renamed to `str_strip_whitespace` \u2014 **behavior preserved**.\n\n### 2. `User` \u2014 Validators & ORM Config\n```diff\n- class Config:\n-     orm_mode = True\n-     anystr_strip_whitespace = True\n+ model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)\n\n- @validator(\"username\")\n+ @field_validator(\"username\")\n+ @classmethod\n  def validate_username(cls, v: str) -> str: ...\n\n- @validator(\"email\")\n+ @field_validator(\"email\")\n+ @classmethod\n  def validate_email(cls, v: str) -> str: ...\n```\n- `orm_mode` \u2192 `from_attributes` (enables `model_validate(obj)` from ORM objects).\n- Validators **must** be `@classmethod` in v2; added explicitly.\n\n### 3. `OrderItem` \u2014 Field Validator\n```diff\n- @validator(\"sku\")\n+ @field_validator(\"sku\")\n+ @classmethod\n  def validate_sku(cls, v: str) -> str: ...\n```\n- Same `@classmethod` requirement.\n\n### 4. `Order` \u2014 Cross-Field Validation & Assignment Guard\n```diff\n- class Config:\n-     validate_assignment = True\n+ model_config = ConfigDict(validate_assignment=True)\n\n- @root_validator\n- def compute_and_verify_total(cls, values: Dict) -> Dict:\n-     items = values.get(\"items\") or []\n-     subtotal = sum(item.quantity * item.unit_price for item in items)\n-     discount = values.get(\"discount_pct\", 0.0)\n-     values[\"total_amount\"] = round(subtotal * (1.0 - (discount / 100.0)), 2)\n-     return values\n+ @model_validator(mode='after')\n+ def compute_and_verify_total(self) -> Self:\n+     items = self.items or []\n+     subtotal = sum(item.quantity * item.unit_price for item in items)\n+     discount = self.discount_pct\n+     object.__setattr__(\n+         self, 'total_amount',\n+         round(subtotal * (1.0 - (discount / 100.0)), 2)\n+     )\n+     return self\n```\n**Critical semantic shift**:  \n- v1 `@root_validator` = **class method** receiving raw `values` dict **before** model construction.  \n- v2 `@model_validator(mode='after')` = **instance method** running **after** model construction.  \n- Mutation now uses `object.__setattr__` to bypass `validate_assignment` recursion (see \u00a7 Potential Behavior Changes).\n\n### 5. `OrderService` \u2014 Serialization & Parsing\n```diff\n- return User.parse_obj(payload)\n+ return User.model_validate(payload)\n\n- return user.dict()\n+ return user.model_dump()\n\n- return Order.parse_obj(payload)\n+ return Order.model_validate(payload)\n\n- return order.dict(exclude=excludes)\n+ return order.model_dump(exclude=excludes)\n```\n- `parse_obj` \u2192 `model_validate` (stricter coercion, see \u00a7 Potential Behavior Changes).\n- `dict()` \u2192 `model_dump()` (supports `exclude`, `include`, `by_alias`, `mode` kwargs).\n\n### 6. `apply_discount` \u2014 Mutation Safety\n```diff\n- order.total_amount = round(subtotal * (1.0 - (discount / 100.0)), 2)\n+ object.__setattr__(\n+     order, 'total_amount',\n+     round(subtotal * (1.0 - (discount / 100.0)), 2)\n+ )\n```\n- Direct assignment would trigger `validate_assignment` \u2192 re-run `@model_validator` \u2192 infinite recursion.  \n- `object.__setattr__` bypasses descriptor protocol safely.\n\n---\n\n## Potential Behavior & Semantic Changes NOT Covered by Tests\n\n> **\u26a0\ufe0f These runtime differences are invisible to the current test suite but may surface in production.**\n\n### 1. `model_validate` vs `parse_obj` \u2014 Coercion Strictness\n| Aspect | `parse_obj` (v1) | `model_validate` (v2) |\n|--------|------------------|----------------------|\n| Input types | Accepts `dict`, `list`, `tuple`, arbitrary objects | Primarily `dict` / `Mapping`; other types raise `TypeError` |\n| Nested model construction | Recursive, lenient | Recursive, **strict** \u2014 expects exact field names |\n| Extra fields | Silently ignored (default) | **Rejected by default** (`extra='ignore'` must be set in `ConfigDict`)"
     },
     "telemetry": {
       "current_tier": "ultra",
-      "call_tokens": { "prompt_tokens": 1100, "completion_tokens": 520, "reasoning_tokens": 140, "cost_usd": 0.00532 },
+      "call_tokens": {
+        "prompt_tokens": 1989,
+        "completion_tokens": 2048,
+        "reasoning_tokens": 582,
+        "cost_usd": 0.016266
+      },
       "cumulative": {
         "tiers": {
-          "ultra": { "tier": "ultra", "prompt_tokens": 1920, "completion_tokens": 940, "reasoning_tokens": 260, "total_tokens": 2860, "cost_usd": 0.00948 },
-          "super": { "tier": "super", "prompt_tokens": 1650, "completion_tokens": 540, "reasoning_tokens": 310, "total_tokens": 2190, "cost_usd": 0.001962 },
-          "nano": { "tier": "nano", "prompt_tokens": 340, "completion_tokens": 180, "reasoning_tokens": 0, "total_tokens": 520, "cost_usd": 0.00007 }
+          "ultra": {
+            "tier": "ultra",
+            "prompt_tokens": 4513,
+            "completion_tokens": 4096,
+            "reasoning_tokens": 2185,
+            "total_tokens": 8609,
+            "cost_usd": 0.033602
+          },
+          "super": {
+            "tier": "super",
+            "prompt_tokens": 4092,
+            "completion_tokens": 3021,
+            "reasoning_tokens": 2007,
+            "total_tokens": 7113,
+            "cost_usd": 0.007893
+          },
+          "nano": {
+            "tier": "nano",
+            "prompt_tokens": 2771,
+            "completion_tokens": 2063,
+            "reasoning_tokens": 0,
+            "total_tokens": 4834,
+            "cost_usd": 0.000689
+          }
         },
-        "total_tokens": 5570,
-        "total_cost_usd": 0.011512
+        "total_tokens": 20556,
+        "total_cost_usd": 0.042184,
+        "tavily_calls": 3
       }
     }
   }

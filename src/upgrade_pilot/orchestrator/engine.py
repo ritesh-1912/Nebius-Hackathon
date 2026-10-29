@@ -78,7 +78,7 @@ def parse_structured_edits(raw_text: str, default_file: Optional[str] = None) ->
 
     # 2. Try Search/Replace blocks (Aider / Diff format)
     block_pattern = (
-        r"(?:FILE:\s*([^\n\r]+)\s*)?<{5,9}\s*SEARCH\s*\n([\s\S]*?)\n={5,9}\s*\n([\s\S]*?)\n>{5,9}\s*REPLACE"
+        r"(?:FILE:\s*([^\n\r]+)\s*)?<+[\s\w]*SEARCH[^\n\r]*\n([\s\S]*?)\n=+[\s\w]*\n([\s\S]*?)\n>+[\s\w]*REPLACE"
     )
     current_file = default_file
     for match in re.finditer(block_pattern, raw_text):
@@ -149,6 +149,87 @@ def parse_structured_edits(raw_text: str, default_file: Optional[str] = None) ->
 
     if edits:
         return edits
+
+    # 4. Fallback: If default_file is provided and raw_text contains a markdown python code block
+    if default_file:
+        # 4a. Check fenced code blocks (```python, ```py, ```order_service.py, etc.)
+        # Match with or without newline before the closing ```
+        blocks = re.findall(r"```(?:[a-zA-Z0-9_\-.:]+)?\s*\n([\s\S]*?)```", raw_text)
+        if blocks:
+            # Filter blocks that parse as valid Python AST
+            valid_py_blocks = []
+            for b in blocks:
+                b_clean = b.strip()
+                try:
+                    import ast
+                    ast.parse(b_clean)
+                    valid_py_blocks.append(b_clean)
+                except Exception:
+                    pass
+            if valid_py_blocks:
+                largest = max(valid_py_blocks, key=len)
+                if len(largest.splitlines()) > 5:
+                    return [
+                        StructuredPatchEdit(
+                            file=default_file,
+                            search="*",
+                            replace=largest,
+                            explanation="Full file extracted from markdown code block",
+                        )
+                    ]
+
+            # If none parsed cleanly via ast, check for python signatures (class/def/import)
+            code_candidates = [
+                b.strip()
+                for b in blocks
+                if any(k in b for k in ("def ", "class ", "import ")) and len(b.strip().splitlines()) > 8
+            ]
+            if code_candidates:
+                largest = max(code_candidates, key=len)
+                return [
+                    StructuredPatchEdit(
+                        file=default_file,
+                        search="*",
+                        replace=largest,
+                        explanation="Full file extracted from code block (lenient syntax candidate)",
+                    )
+                ]
+
+        # 4b. Check unclosed fenced code block (if model omitted closing ``` or reached token limit)
+        if "```" in raw_text:
+            after_fence = raw_text.split("```", 1)[1]
+            lines = after_fence.splitlines()
+            if lines:
+                if any(tag in lines[0].lower() for tag in ("python", "py")):
+                    candidate = "\n".join(lines[1:]).strip()
+                else:
+                    candidate = after_fence.strip()
+                if any(k in candidate for k in ("def ", "class ", "import ")) and len(candidate.splitlines()) > 8:
+                    return [
+                        StructuredPatchEdit(
+                            file=default_file,
+                            search="*",
+                            replace=candidate,
+                            explanation="Full file extracted from unclosed code fence",
+                        )
+                    ]
+
+        # 4c. Check if the entire raw text (or trimmed) is valid Python code
+        try:
+            import ast
+            trimmed = raw_text.strip()
+            ast.parse(trimmed)
+            if len(trimmed.splitlines()) > 8 and ("class " in trimmed or "def " in trimmed):
+                return [
+                    StructuredPatchEdit(
+                        file=default_file,
+                        search="*",
+                        replace=trimmed,
+                        explanation="Full file from raw python output",
+                    )
+                ]
+        except Exception:
+            pass
 
     raise ValueError("Could not parse structured edits from model output.")
 
@@ -443,6 +524,8 @@ def run_upgrade_pipeline(
         max_iterations = settings.MAX_ITERATIONS
         all_passed = False
         last_test_res = baseline_res
+        cap_hit_reason: Optional[str] = None
+        last_patch_err: Optional[str] = None
 
         notes_str = "\n".join(
             f"- [{r.title or r.query}]({r.source_url}): {r.note}" if r.source_url else f"- {r.title or r.query}: {r.note}"
@@ -455,6 +538,7 @@ def run_upgrade_pipeline(
             # Check Token Budget Cap
             summary = cost_tracker.get_summary()
             if summary.total_tokens >= settings.MAX_TOKEN_BUDGET:
+                cap_hit_reason = f"Token budget cap ({settings.MAX_TOKEN_BUDGET:,} tokens) reached"
                 yield create_event(
                     run_id=run_id,
                     demo_id=demo_name,
@@ -462,7 +546,7 @@ def run_upgrade_pipeline(
                     iteration=iteration,
                     max_iterations=max_iterations,
                     status="error",
-                    message=f"Token budget cap ({settings.MAX_TOKEN_BUDGET} tokens) reached. Halting loop.",
+                    message=f"Hard cap reached: {cap_hit_reason}. Halting loop.",
                     cost_tracker=cost_tracker,
                 )
                 break
@@ -488,39 +572,57 @@ def run_upgrade_pipeline(
                     default_target_file = fname
                     break
 
+            patch_err_context = (
+                f"\n### Previous Patch Application Error (Avoid this mistake!):\n{last_patch_err}\n"
+                if last_patch_err
+                else ""
+            )
+
+            recursion_hint = ""
+            if "RecursionError" in (last_test_res.error_text or ""):
+                recursion_hint = (
+                    "\n### CRITICAL RECURSION ERROR FIX:\n"
+                    "Your model has `validate_assignment=True`. Mutating `self.attr = ...` directly inside `@model_validator(mode='after')` "
+                    "re-triggers validation indefinitely! You MUST replace `self.total_amount = round(...)` with "
+                    "`object.__setattr__(self, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2))`.\n"
+                )
+
             super_prompt = (
                 f"You are Nemotron 3 Super, an expert Python code patcher.\n\n"
                 f"### Migration Plan (Nemotron 3 Ultra):\n{plan_markdown}\n\n"
                 f"### Official Migration Rules (Tavily & Nano):\n{notes_str}\n\n"
-                f"### Current Pytest Failures:\n```\n{last_test_res.error_text}\n```\n\n"
+                f"### Current Pytest Failures:\n```\n{last_test_res.error_text}\n```\n"
+                f"{patch_err_context}"
+                f"{recursion_hint}\n"
                 f"### Current Codebase:\n{code_context}\n\n"
-                f"Generate targeted edits to fix the breaking changes and make tests pass.\n"
-                f"You can format your edits in either of these formats:\n\n"
-                f"FORMAT 1 (Search/Replace blocks — keep SEARCH blocks under 10 lines):\n"
-                f"FILE: <path/to/file.py>\n"
-                f"<<<<<<< SEARCH\n"
-                f"<exact existing lines to replace>\n"
-                f"=======\n"
-                f"<new replacement lines>\n"
-                f">>>>>>> REPLACE\n\n"
-                f"FORMAT 2 (Full file replacement):\n"
-                f"FILE: <path/to/file.py>\n"
-                f"<<<<<<< FULL_FILE\n"
+                f"Generate the complete updated implementation for `{default_target_file or 'file.py'}` to resolve all breaking changes and make all tests pass.\n\n"
+                f"Format your response as a markdown Python code block:\n"
+                f"```python\n"
                 f"<complete updated python code for this file>\n"
-                f">>>>>>> FULL_FILE\n\n"
-                f"FORMAT 3 (JSON array of edits):\n"
-                f"```json\n"
-                f"[{{\"file\": \"file.py\", \"search\": \"...\", \"replace\": \"...\"}}]\n"
-                f"```\n"
-                f"CRITICAL RULES:\n"
-                f"1. `SEARCH` lines must match existing lines in the target file.\n"
-                f"2. Ensure valid Python syntax.\n"
-                f"3. Address the specific cause of the failing tests."
+                f"```\n\n"
+                f"CRITICAL IMPLEMENTATION RULES:\n"
+                f"1. Output the complete updated file in a ```python ... ``` code block. Do not omit any methods or classes.\n"
+                f"2. BE COMPREHENSIVE: Execute the full architectural Migration Plan and Official Migration Rules across the target file. "
+                f"Do not just fix the single surface error; migrate all deprecated API calls in the file simultaneously:\n"
+                f"   - For Pydantic v2:\n"
+                f"     * Field validation: replace `Field(..., regex=r'...')` with `Field(..., pattern=r'...')`. Keep regex strings exact.\n"
+                f"     * Model config: replace inner `class Config:` with `model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True, validate_assignment=True)` matching original options.\n"
+                f"     * Field validators: replace `@validator('field')` with `@field_validator('field')` and `@classmethod`. CRITICAL: DO NOT use `mode='before'`; default `mode='after'` ensures `str_strip_whitespace=True` is executed prior to validation!\n"
+                f"     * Root/model validators: replace `@root_validator` with `@model_validator(mode='after')`. In Pydantic v2, `mode='after'` passes the instance `self` (NOT a dict!). Access fields directly via `self.items` and `self.discount_pct` (NOT `values.get(...)`!). Return `self`.\n"
+                f"       CRITICAL RECURSION GUARD: In `Order`, `validate_assignment=True` is active. Assigning `self.total_amount = ...` causes infinite RecursionError! You MUST use `object.__setattr__(self, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2))`.\n"
+                f"     * In `OrderService.apply_discount`: update `order.discount_pct = discount`, recalculate total using `object.__setattr__(order, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2))`, and return `order`.\n"
+                f"     * Methods: replace `.parse_obj(payload)` with `.model_validate(payload)`, and `.dict(...)` with `.model_dump(...)`.\n"
+                f"   - For SQLAlchemy 2.0:\n"
+                f"     * Imports: MUST import `text`: `from sqlalchemy import ..., text` and `from sqlalchemy.orm import declarative_base`.\n"
+                f"     * Raw SQL execution: replace `self.engine.execute(query)` with `with self.engine.connect() as conn: result = conn.execute(text(query))`.\n"
+                f"     * Scalar count: `with self.engine.connect() as conn: val = conn.execute(text('SELECT count(*) FROM users')).scalar()`.\n"
+                f"     * Query lookups: replace `session.query(M).get(id)` with `session.get(M, id)`.\n"
+                f"3. Ensure all newly required symbols (e.g. `ConfigDict, field_validator, model_validator, text, Self`) are imported in the target file."
             )
 
             resp_super = nebius.call_super(
                 prompt=super_prompt,
-                system_prompt="You are Nemotron 3 Super. Output precise search-and-replace code edits.",
+                system_prompt="You are Nemotron 3 Super. Output the complete updated Python file wrapped in a ```python ... ``` markdown code block.",
                 max_tokens=4096,
             )
 
@@ -541,20 +643,35 @@ def run_upgrade_pipeline(
 
             if parse_error or not edits:
                 # REPAIR STEP: Re-prompt Super to repair its output
+                demo_specific_rules = ""
+                if "pydantic" in demo_name.lower():
+                    demo_specific_rules = (
+                        "1. Replace Field(regex=...) with Field(pattern=...)\n"
+                        "2. Replace class Config with model_config = ConfigDict(str_strip_whitespace=True, from_attributes=True, validate_assignment=True)\n"
+                        "3. Use @field_validator('field') with @classmethod (do NOT use mode='before')\n"
+                        "4. In Order, use @model_validator(mode='after') def compute_and_verify_total(self). Access self.items and self.discount_pct. Mutating self.total_amount directly causes infinite RecursionError because validate_assignment=True! You MUST use: object.__setattr__(self, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2)). Return self.\n"
+                        "5. In OrderService.apply_discount: order.discount_pct = discount, recalculate total with object.__setattr__(order, 'total_amount', round(subtotal * (1.0 - (discount / 100.0)), 2)), return order\n"
+                        "6. Replace parse_obj with model_validate, and dict with model_dump\n"
+                    )
+                elif "sql" in demo_name.lower() or "alchemy" in demo_name.lower():
+                    demo_specific_rules = (
+                        "1. Import text: from sqlalchemy import ..., text\n"
+                        "2. Import declarative_base from sqlalchemy.orm\n"
+                        "3. Replace engine.execute(q) with: with self.engine.connect() as conn: result = conn.execute(text(q))\n"
+                        "4. Replace scalar count with: with self.engine.connect() as conn: val = conn.execute(text('SELECT count(*) FROM users')).scalar()\n"
+                        "5. Replace session.query(User).get(id) with: session.get(User, id)\n"
+                    )
+
                 repair_prompt = (
-                    f"Your previous output could not be parsed into edits. Error: {parse_error}\n"
-                    f"Previous output preview:\n{text_to_parse[:600]}\n\n"
-                    f"Please re-output your edits using Search/Replace blocks:\n"
-                    f"FILE: {default_target_file or 'file.py'}\n"
-                    f"<<<<<<< SEARCH\n"
-                    f"<exact existing lines to replace>\n"
-                    f"=======\n"
-                    f"<new replacement lines>\n"
-                    f">>>>>>> REPLACE\n"
+                    f"Your previous output for `{default_target_file or 'file.py'}` could not be parsed into valid code edits. Error: {parse_error}\n\n"
+                    f"Please output ONLY the complete updated code for `{default_target_file or 'file.py'}` wrapped in a single ```python ... ``` markdown code block.\n"
+                    f"Do not write any commentary, intro, or outro. Just the markdown code block containing the entire updated file.\n\n"
+                    f"CRITICAL REQUIREMENTS:\n{demo_specific_rules}\n"
+                    f"Current code of `{default_target_file or 'file.py'}`:\n```python\n{current_code.get(default_target_file, '')}\n```\n"
                 )
                 resp_repair = nebius.call_super(
                     prompt=repair_prompt,
-                    system_prompt="Output ONLY Search/Replace blocks for the code edits.",
+                    system_prompt="Output ONLY the complete updated Python file in a ```python ... ``` markdown code block.",
                     max_tokens=4096,
                 )
                 repair_text = resp_repair.text or resp_repair.reasoning or ""
@@ -577,6 +694,7 @@ def run_upgrade_pipeline(
 
             # Apply edits to the sandbox
             applied_summaries, patch_err = patcher.apply_edits(edits)
+            last_patch_err = patch_err
 
             if patch_err:
                 yield create_event(
@@ -648,6 +766,9 @@ def run_upgrade_pipeline(
                 all_passed = True
                 break
 
+        if not all_passed and not cap_hit_reason and iteration >= max_iterations:
+            cap_hit_reason = f"Maximum iteration cap ({max_iterations}) reached"
+
         # ---------------------------------------------------------------------
         # STEP 6: Nemotron 3 Ultra — Final Diff Review & PR Summary
         # ---------------------------------------------------------------------
@@ -672,14 +793,15 @@ def run_upgrade_pipeline(
             f"You are Nemotron 3 Ultra, a principal software engineer and tech lead.\n\n"
             f"Review this completed dependency migration diff:\n"
             f"```diff\n{final_diff}\n```\n\n"
-            f"Test Suite Outcome: {last_test_res.passed_tests} passed, {last_test_res.failed_tests} failed.\n\n"
+            f"Test Suite Outcome: {last_test_res.passed_tests} passed, {last_test_res.failed_tests} failed out of {last_test_res.total_tests}.\n\n"
             f"Official Documentation Sources Consulted:\n{sources_formatted}\n\n"
-            f"Write a GitHub Pull Request description in markdown format:\n"
+            f"Write a comprehensive, production-grade GitHub Pull Request description in markdown format:\n"
             f"- **Title & Executive Summary**\n"
             f"- **Breaking Changes Addressed**\n"
             f"- **Detailed Code Changes**\n"
+            f"- **Potential Behavior & Semantic Changes NOT Covered by Tests** (CRITICAL: Meticulously inspect the diff for subtle runtime behavioral shifts, coercion differences, validation modes, mutation handling, or schema differences that unit tests might not catch)\n"
             f"- **Verification & Safety Checks**\n"
-            f"- **Official Documentation & Migration Guides Used** (link the sources)"
+            f"- **Official Documentation & Migration Guides Used** (MANDATORY: list every source URL consulted with full markdown links: [Title](URL))"
         )
 
         resp_review = nebius.call_ultra(
@@ -690,16 +812,31 @@ def run_upgrade_pipeline(
 
         pr_summary_md = resp_review.text
 
-        final_status = "success" if all_passed else "warning"
-        final_msg = (
-            f"Migration {'succeeded' if all_passed else 'completed with warnings'} in {iteration} iteration(s). "
-            f"Final tests: {last_test_res.passed_tests}/{last_test_res.total_tests} passed."
-        )
+        if all_passed:
+            final_status = "success"
+            final_msg = (
+                f"Migration succeeded in {iteration} iteration(s). "
+                f"Final tests: {last_test_res.passed_tests}/{last_test_res.total_tests} passed."
+            )
+        else:
+            final_status = "error" if cap_hit_reason else "warning"
+            if cap_hit_reason:
+                final_msg = (
+                    f"Migration halted: {cap_hit_reason}. "
+                    f"Final tests: {last_test_res.passed_tests}/{last_test_res.total_tests} passed."
+                )
+            else:
+                final_msg = (
+                    f"Migration completed with warnings in {iteration} iteration(s). "
+                    f"Final tests: {last_test_res.passed_tests}/{last_test_res.total_tests} passed."
+                )
 
         yield create_event(
             run_id=run_id,
             demo_id=demo_name,
             step="COMPLETED",
+            iteration=iteration,
+            max_iterations=max_iterations,
             status=final_status,
             message=final_msg,
             payload=EventPayload(

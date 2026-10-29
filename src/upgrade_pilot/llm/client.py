@@ -3,6 +3,7 @@
 import logging
 import time
 from typing import Any, Dict, List, Optional
+import httpx
 import openai
 from openai import APIConnectionError, APIStatusError, APITimeoutError, OpenAI, RateLimitError
 from tenacity import (
@@ -35,10 +36,17 @@ class NebiusClient:
             logger.warning("NEBIUS_API_KEY is not set. API calls will fail.")
 
         # Initialize OpenAI client with Nebius base_url and custom timeout
+        timeout = httpx.Timeout(
+            timeout=self.settings.NEBIUS_TIMEOUT_SECONDS,
+            connect=30.0,
+            read=self.settings.NEBIUS_TIMEOUT_SECONDS,
+            write=30.0,
+            pool=30.0,
+        )
         self.client = OpenAI(
             base_url=self.settings.NEBIUS_BASE_URL,
             api_key=self.settings.NEBIUS_API_KEY,
-            timeout=self.settings.NEBIUS_TIMEOUT_SECONDS,
+            timeout=timeout,
             max_retries=0,  # We manage retries explicitly with tenacity for precise backoff
         )
 
@@ -54,7 +62,7 @@ class NebiusClient:
         @retry(
             reraise=True,
             stop=stop_after_attempt(self.settings.NEBIUS_MAX_RETRIES),
-            wait=wait_exponential(multiplier=1, min=1, max=10),
+            wait=wait_exponential(multiplier=1.5, min=2, max=15),
             retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError, APIStatusError)),
             before_sleep=before_sleep_log(logger, logging.WARNING),
         )

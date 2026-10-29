@@ -125,7 +125,11 @@
           <button id="resetBtn" onclick="resetState()" class="hidden px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-semibold text-gray-300 transition">
             Reset
           </button>
-          <button id="runBtn" onclick="startUpgrade()" class="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-nvidia to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black font-extrabold text-sm sm:text-base tracking-wide shadow-lg shadow-nvidia/25 hover:shadow-nvidia/40 transition transform active:scale-95 flex items-center justify-center space-x-2">
+          <button id="cachedRunBtn" onclick="startUpgrade(true)" class="px-4 py-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-xs sm:text-sm font-semibold text-purple-300 transition flex items-center space-x-1.5" title="Replay a verified pre-recorded real run without consuming live API tokens">
+            <span>📼</span>
+            <span>Cached Sample Run</span>
+          </button>
+          <button id="runBtn" onclick="startUpgrade(false)" class="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-nvidia to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black font-extrabold text-sm sm:text-base tracking-wide shadow-lg shadow-nvidia/25 hover:shadow-nvidia/40 transition transform active:scale-95 flex items-center justify-center space-x-2">
             <span id="runBtnIcon">🚀</span>
             <span id="runBtnText">Run Upgrade Pilot</span>
           </button>
@@ -232,12 +236,33 @@
         </button>
       </div>
 
+      <!-- CACHED SAMPLE RUN BADGE BANNER -->
+      <div id="cachedRunBanner" class="hidden p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <span class="text-lg">📼</span>
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Cached Sample Run</span>
+            <span class="text-xs text-purple-200 ml-2 font-mono">Verified recording of previous real run — zero API credits consumed</span>
+          </div>
+        </div>
+        <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-mono border border-purple-500/30">Offline Playback</span>
+      </div>
+
       <!-- TIMELINE FEED -->
       <div id="timelineFeed" class="space-y-4"></div>
     </section>
 
     <!-- FINAL SCREEN: DIFF & PR SUMMARY (HIDDEN UNTIL FINISHED) -->
     <section id="finalResultsSection" class="glass-panel p-6 sm:p-8 space-y-6 hidden border-emerald-500/30">
+      <!-- HARD CAP ALERT BANNER (IF TRIGGERED) -->
+      <div id="capAlertBanner" class="hidden p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-start space-x-3">
+        <span class="text-xl">⚠️</span>
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wider text-amber-400">Execution Limit Enforced</div>
+          <div id="capAlertText" class="text-xs text-amber-200 mt-0.5 font-mono"></div>
+        </div>
+      </div>
+
       <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/10 gap-4">
         <div>
           <span class="text-xs font-bold uppercase tracking-wider text-nvidia">Migration Complete</span>
