@@ -162,16 +162,19 @@ pip install -e . --no-deps
 cp .env.example .env
 # Edit .env with your NEBIUS_API_KEY and TAVILY_API_KEY
 
-# 5. Populate local offline wheelhouse
+# 5. Run the automated test suite (17 tests)
+pytest -v
+
+# 6. Populate local offline wheelhouse
 python scripts/build_wheelhouse.py
 
-# 6. Verify sandbox execution proof (all-green on old version, red on new version)
+# 7. Verify sandbox execution proof (all-green on old version, red on new version)
 python scripts/verify_sandbox.py
 
-# 7. Run CLI directly
+# 8. Run CLI directly
 python -m upgrade_pilot.cli demo_pydantic
 
-# 8. Or start the web application
+# 9. Or start the web application
 uvicorn upgrade_pilot.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 Open **`http://localhost:8000`** in your browser.
@@ -183,7 +186,7 @@ Open **`http://localhost:8000`** in your browser.
 ### Run with Docker Locally
 
 ```bash
-# Build production image (pre-builds Linux wheelhouse inside image)
+# Build production image (pre-builds Linux wheelhouse inside image, runs as non-root 'pilot')
 docker build -t upgrade-pilot .
 
 # Run with environment secrets mounted at runtime
@@ -192,6 +195,17 @@ docker run --rm -it -p 8000:8000 --env-file .env upgrade-pilot
 
 ### Production Deployment (Render)
 Upgrade Pilot is pre-configured for 1-click deployment on **Render** via [`render.yaml`](render.yaml). See [`DEPLOY.md`](DEPLOY.md) for full instructions.
+
+---
+
+## Security & Integrity Architecture
+
+Upgrade Pilot enforces strict production-grade security boundaries:
+1. **Source Code Immutability**: The agent may only modify application source files. Modifying test files (`test_*.py`, `*_test.py`), `conftest.py`, or test configurations (`pytest.ini`, `setup.cfg`, `tox.ini`) is blocked in code and aborts the run with `PatchIntegrityViolationError`.
+2. **Path Traversal Defense**: All patch paths are resolved and validated within the ephemeral sandbox directory; any traversal (`../` or escaping absolute paths) raises `PathTraversalError`.
+3. **Secret Isolation**: Ephemeral subprocess sandboxes run in an environment with all sensitive API keys (`NEBIUS_API_KEY`, `TAVILY_API_KEY`, etc.) completely stripped from the process table. Docker containers run under a non-root `pilot` user.
+4. **Untrusted Web Content Defense**: Tavily search results are explicitly treated as external reference material only; prompt guardrails forbid executing search text as code or following prompt overrides.
+5. **Rate & Spend Quotas**: In-memory sliding window rate limits (5 runs/10 min/IP), hard timeout (300s/run), token budget (60,000/run), and global daily spend cap ($10.00 / 500,000 tokens) with graceful fallback to high-fidelity cached demonstration runs.
 
 ---
 

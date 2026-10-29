@@ -66,6 +66,7 @@ Upgrade Pilot includes production-grade security and quota guards tailored for p
    | `MODEL_NANO` | `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` | Nano search summarizer |
    | `TAVILY_API_KEY` | `tvly-...` | Web search API key |
    | `DAILY_TOKEN_LIMIT`| `500000` | Global daily token budget |
+   | `DAILY_SPEND_LIMIT_USD`| `10.0` | Global daily spend budget ($ USD) |
    | `MAX_CONCURRENT_RUNS`| `1` | Max concurrent sandbox runs |
    | `PER_RUN_TIMEOUT_SECONDS` | `300` | Max run duration |
 6. Under **Health Check Path**, enter: `/health`.
