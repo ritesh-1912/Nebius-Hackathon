@@ -802,19 +802,19 @@ def run_upgrade_pipeline(
             f"```diff\n{final_diff}\n```\n\n"
             f"Test Suite Outcome: {last_test_res.passed_tests} passed, {last_test_res.failed_tests} failed out of {last_test_res.total_tests}.\n\n"
             f"Official Documentation Sources Consulted:\n{sources_formatted}\n\n"
-            f"Write a comprehensive, production-grade GitHub Pull Request description in markdown format:\n"
-            f"- **Title & Executive Summary**\n"
-            f"- **Breaking Changes Addressed**\n"
-            f"- **Detailed Code Changes**\n"
-            f"- **Potential Behavior & Semantic Changes NOT Covered by Tests** (CRITICAL: Meticulously inspect the diff for subtle runtime behavioral shifts, coercion differences, validation modes, mutation handling, or schema differences that unit tests might not catch)\n"
-            f"- **Verification & Safety Checks**\n"
-            f"- **Official Documentation & Migration Guides Used** (MANDATORY: list every source URL consulted with full markdown links: [Title](URL))"
+            f"Write a concise, high-level GitHub Pull Request description in markdown format. Be brief, structured, and complete:\n"
+            f"- **Title & Executive Summary**: 2-3 sentence overview of the migration.\n"
+            f"- **Breaking Changes Addressed**: Key breaking changes migrated.\n"
+            f"- **Summary of Code Changes**: Bulleted highlights of changes (do NOT re-paste large code blocks).\n"
+            f"- **Potential Behavior & Semantic Changes NOT Covered by Tests**: (CRITICAL: Detailed analysis of subtle runtime behavioral shifts, coercion differences, validation modes, mutation handling, or schema differences that tests might not catch).\n"
+            f"- **Verification & Safety Checks**: Brief summary of test results and safeguards.\n"
+            f"- **Official Documentation & Migration Guides Used**: List every source URL consulted with full markdown links: [Title](URL)."
         )
 
         resp_review = nebius.call_ultra(
             prompt=review_prompt,
-            system_prompt="You are Nemotron 3 Ultra. Write a crisp, production-grade GitHub PR description in markdown.",
-            max_tokens=2048,
+            system_prompt="You are Nemotron 3 Ultra. Write a concise, production-grade GitHub PR description in markdown. Always ensure all sections are fully completed.",
+            max_tokens=4096,
         )
 
         pr_summary_md = resp_review.text
