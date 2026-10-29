@@ -118,11 +118,24 @@ class SandboxEnvironment:
         if not self.run_dir or not self.pytest_bin or not self.pytest_bin.exists():
             raise RuntimeError("Sandbox environment is not set up.")
 
-        env = os.environ.copy()
-        env["PATH"] = f"{self.venv_dir / 'bin'}:{env.get('PATH', '')}"
-        env["PYTHONPATH"] = str(self.run_dir)
-        env["PYTHONDONTWRITEBYTECODE"] = "1"
-        env["PYTHONNOUSERSITE"] = "1"
+        # Build sanitized, leak-proof environment for the sandbox subprocess
+        # Ensures NO API keys, tokens, or parent process secrets are accessible to sandbox code
+        clean_path = f"{self.venv_dir / 'bin'}:{os.environ.get('PATH', '/usr/local/bin:/usr/bin:/bin')}"
+        env = {
+            "PATH": clean_path,
+            "PYTHONPATH": str(self.run_dir),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONNOUSERSITE": "1",
+            "HOME": str(self.run_dir),
+            "TMPDIR": str(self.run_dir),
+            "LANG": os.environ.get("LANG", "en_US.UTF-8"),
+            "LC_ALL": os.environ.get("LC_ALL", "en_US.UTF-8"),
+        }
+
+        # Explicitly scrub all secret-like environment variables as defense in depth
+        for k in list(env.keys()):
+            if any(sec in k.upper() for sec in ("KEY", "SECRET", "TOKEN", "AUTH", "PASS", "CREDENTIAL")):
+                env.pop(k, None)
 
         cmd = [str(self.pytest_bin), "-v", "--tb=short", "--color=no"]
 

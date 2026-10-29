@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     PER_RUN_TIMEOUT_SECONDS: int = 300
     MAX_CONCURRENT_RUNS: int = 1
     DAILY_TOKEN_LIMIT: int = 500000
+    DAILY_SPEND_LIMIT_USD: float = 10.0
 
     # Optional price overrides (USD per 1M tokens)
     PRICE_ULTRA_INPUT: float = DEFAULT_PRICE_PER_1M_TOKENS["ultra"]["input"]

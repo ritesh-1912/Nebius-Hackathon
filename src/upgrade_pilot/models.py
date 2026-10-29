@@ -74,6 +74,7 @@ class StructuredPatchEdit(BaseModel):
 class TestSummaryPayload(BaseModel):
     """Structured test outcome summary for events."""
 
+    __test__ = False
     total: int = 0
     passed: int = 0
     failed: int = 0

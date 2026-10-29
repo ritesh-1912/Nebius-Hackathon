@@ -37,8 +37,12 @@ COPY src/ /app/src/
 # Install the application
 RUN pip install --no-cache-dir -e . --no-deps
 
-# Create temporary runs directory with open permissions
-RUN mkdir -p /tmp/upgrade_pilot_runs && chmod 777 /tmp/upgrade_pilot_runs
+# Create non-root user 'pilot' and configure permissions
+RUN useradd -m -u 1000 pilot && \
+    mkdir -p /tmp/upgrade_pilot_runs && \
+    chown -R pilot:pilot /tmp/upgrade_pilot_runs /app
+
+USER pilot
 
 EXPOSE 8000
 

@@ -78,7 +78,7 @@ def startup_checks():
     has_tavily = bool(settings.TAVILY_API_KEY and not settings.TAVILY_API_KEY.startswith("your_"))
     key_preview = f"{settings.TAVILY_API_KEY[:6]}...{settings.TAVILY_API_KEY[-4:]}" if has_tavily else "NOT CONFIGURED"
     if has_tavily:
-        logger.info(f"✓ Startup check: TAVILY_API_KEY is present and active (Key: {key_preview}). Real-time research enabled.")
+        logger.info("✓ Startup check: TAVILY_API_KEY is present and active. Real-time research enabled.")
     else:
         logger.warning("⚠️ Startup check: TAVILY_API_KEY is missing. Agent will operate with 'no external docs available' fallback.")
 
@@ -335,10 +335,11 @@ async def stream_upgrade(
                         yield f"data: {cached_evt.model_dump_json()}\n\n"
                     break
                 else:
-                    # Record tokens into daily budget
+                    # Record tokens and spend into daily budget
                     if hasattr(item, "telemetry") and item.telemetry and item.telemetry.call_tokens:
-                        budget_limiter.record_tokens(
-                            item.telemetry.call_tokens.prompt_tokens + item.telemetry.call_tokens.completion_tokens
+                        budget_limiter.record_usage(
+                            tokens=item.telemetry.call_tokens.prompt_tokens + item.telemetry.call_tokens.completion_tokens,
+                            cost_usd=item.telemetry.call_tokens.cost_usd,
                         )
                     yield f"data: {item.model_dump_json()}\n\n"
 
