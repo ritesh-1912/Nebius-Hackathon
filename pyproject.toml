@@ -28,3 +28,8 @@ upgrade-pilot = "upgrade_pilot.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+norecursedirs = ["demos", ".venv", "wheelhouse", ".git"]

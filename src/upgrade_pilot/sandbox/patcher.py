@@ -1,4 +1,4 @@
-"""Safe file patcher with AST syntax validation and unified diff tracking."""
+"""Safe file patcher with AST syntax validation, path traversal defense, and test protection."""
 
 import ast
 import difflib
@@ -13,6 +13,50 @@ logger = logging.getLogger(__name__)
 class PatchApplicationError(Exception):
     """Raised when a patch cannot be cleanly applied or fails syntax checks."""
     pass
+
+
+class PatchIntegrityViolationError(Exception):
+    """Raised when a patch attempts to modify protected test files or configuration."""
+    pass
+
+
+class PathTraversalError(Exception):
+    """Raised when a patch specifies a target outside the isolated sandbox directory."""
+    pass
+
+
+PROTECTED_TEST_CONFIG_PATTERNS = {
+    "conftest.py",
+    "pytest.ini",
+    "setup.cfg",
+    "tox.ini",
+    ".coveragerc",
+    "pyproject.toml",
+}
+
+
+def is_protected_file(filename_or_path: str) -> bool:
+    """Determine if a file path targets test files, test configuration, conftest, or pytest settings.
+    
+    The agent may only modify application source code, never tests or harness configurations.
+    """
+    clean = filename_or_path.strip().replace("\\", "/")
+    p = Path(clean)
+    name = p.name.lower()
+
+    if name in PROTECTED_TEST_CONFIG_PATTERNS:
+        return True
+
+    # Check test file naming conventions
+    if name.startswith("test_") or name.endswith("_test.py") or name == "tests.py":
+        return True
+
+    # Check if inside a test directory
+    parts = [part.lower() for part in p.parts]
+    if any(part in ("tests", "test", "testing") for part in parts):
+        return True
+
+    return False
 
 
 class SandboxPatcher:
@@ -35,18 +79,70 @@ class SandboxPatcher:
                 logger.warning(f"Could not read {rel_path}: {e}")
 
     def find_file(self, filename: str) -> Optional[Path]:
-        """Resolve a filename or relative path inside the sandbox."""
-        clean_name = filename.strip().lstrip("/")
-        # Try direct relative path
-        candidate = self.sandbox_dir / clean_name
+        """Resolve a filename or relative path inside the sandbox.
+        
+        Enforces:
+        1. Path traversal defense (target must resolve strictly inside self.sandbox_dir).
+        2. Test/config file immutability (modifying tests or test configs is forbidden).
+        """
+        clean_name = filename.strip()
+        raw_path = Path(clean_name)
+
+        # 1. Enforce strict path traversal defense
+        if raw_path.is_absolute():
+            try:
+                candidate = raw_path.resolve()
+                candidate.relative_to(self.sandbox_dir)
+            except ValueError:
+                raise PathTraversalError(
+                    f"Security error: Path traversal detected in absolute path '{filename}'. "
+                    f"Target resolves outside the sandbox directory."
+                )
+        elif ".." in raw_path.parts:
+            try:
+                candidate = (self.sandbox_dir / raw_path).resolve()
+                candidate.relative_to(self.sandbox_dir)
+            except ValueError:
+                raise PathTraversalError(
+                    f"Security error: Path traversal detected in relative path '{filename}'. "
+                    f"Target resolves outside the sandbox directory."
+                )
+        else:
+            candidate = (self.sandbox_dir / raw_path).resolve()
+            try:
+                candidate.relative_to(self.sandbox_dir)
+            except ValueError:
+                raise PathTraversalError(
+                    f"Security error: Path traversal detected in '{filename}'."
+                )
+
+        # 2. Enforce Rule 1: Agent may only modify application source files
+        if is_protected_file(clean_name):
+            raise PatchIntegrityViolationError(
+                f"Patch integrity violation: Modifying test files or test configuration ('{filename}') "
+                f"is strictly prohibited. The agent may only modify application source files."
+            )
+
         if candidate.is_file():
+            # Double check canonical resolved path against protection
+            rel = str(candidate.relative_to(self.sandbox_dir))
+            if is_protected_file(rel):
+                raise PatchIntegrityViolationError(
+                    f"Patch integrity violation: Modifying test files or test configuration ('{rel}') "
+                    f"is strictly prohibited."
+                )
             return candidate
 
-        # Try matching basename
+        # Try matching basename in sandbox
         for py_file in self.sandbox_dir.rglob("*.py"):
             if ".venv" in py_file.parts or "__pycache__" in py_file.parts:
                 continue
-            if py_file.name == Path(clean_name).name:
+            if py_file.name == raw_path.name:
+                rel_path = str(py_file.relative_to(self.sandbox_dir))
+                if is_protected_file(rel_path):
+                    raise PatchIntegrityViolationError(
+                        f"Patch integrity violation: Modifying test file '{rel_path}' is strictly prohibited."
+                    )
                 return py_file
 
         return None
@@ -60,7 +156,12 @@ class SandboxPatcher:
         applied: List[str] = []
 
         for i, edit in enumerate(edits, start=1):
-            target_path = self.find_file(edit.file)
+            try:
+                target_path = self.find_file(edit.file)
+            except (PatchIntegrityViolationError, PathTraversalError) as sec_err:
+                logger.error(f"Patch security violation: {sec_err}")
+                raise sec_err
+
             if not target_path:
                 return applied, f"File '{edit.file}' not found in sandbox directory."
 
@@ -140,6 +241,22 @@ class SandboxPatcher:
                 return applied, f"Failed to write changes to '{edit.file}': {e}"
 
         return applied, None
+
+    def get_changed_files(self) -> List[str]:
+        """Return a sorted list of all relative file paths modified in the sandbox."""
+        changed: List[str] = []
+        for rel_path, original_content in self.original_files.items():
+            curr_path = self.sandbox_dir / rel_path
+            if not curr_path.exists():
+                changed.append(rel_path)
+            else:
+                try:
+                    curr_content = curr_path.read_text(encoding="utf-8")
+                    if curr_content != original_content:
+                        changed.append(rel_path)
+                except Exception:
+                    pass
+        return sorted(changed)
 
     def get_unified_diff(self) -> str:
         """Generate unified diff between original baseline files and current sandbox state."""

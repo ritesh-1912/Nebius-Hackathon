@@ -116,6 +116,7 @@ class EventPayload(BaseModel):
     patches: Optional[List[StructuredPatchEdit]] = None
     diff: Optional[str] = None
     pr_summary: Optional[str] = None
+    changed_files: List[str] = Field(default_factory=list)
 
 
 class AgentEvent(BaseModel):

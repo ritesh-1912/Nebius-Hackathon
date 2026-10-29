@@ -8,6 +8,7 @@ let eventCount = 0;
 let lastDiff = "";
 let lastPrSummary = "";
 let lastTestSummary = null;
+let lastChangedFiles = [];
 
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
@@ -174,6 +175,9 @@ function handleAgentEvent(event) {
   }
   if (event.payload && event.payload.pr_summary) {
     lastPrSummary = event.payload.pr_summary;
+  }
+  if (event.payload && event.payload.changed_files) {
+    lastChangedFiles = event.payload.changed_files;
   }
 
   if (event.step === "COMPLETED") {
@@ -423,6 +427,18 @@ function showFinalResults() {
       badge.className = "text-xs px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
     } else {
       badge.className = "text-xs px-2 py-0.5 rounded font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30";
+    }
+  }
+
+  // Render Changed Files
+  const filesList = document.getElementById("changedFilesList");
+  if (filesList) {
+    if (lastChangedFiles && lastChangedFiles.length > 0) {
+      filesList.classList.remove("hidden");
+      filesList.innerHTML = `<span class="text-[11px] text-gray-400 font-medium mr-1">Modified Files:</span>` +
+        lastChangedFiles.map(f => `<span class="text-[11px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono border border-blue-500/30">📄 ${f}</span>`).join(" ");
+    } else {
+      filesList.classList.add("hidden");
     }
   }
 
