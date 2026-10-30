@@ -1,18 +1,53 @@
 # Upgrade Pilot
 
 **Autonomous Python Dependency Migration Agent**  
-*Built for the Nebius x NVIDIA Global AI Hackathon — Coding and Agentic Engineering Track*
+*Nebius x NVIDIA Global AI Hackathon — Coding and Agentic Engineering Track*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/ritesh-1912/Nebius-Hackathon/actions/workflows/ci.yml/badge.svg)](https://github.com/ritesh-1912/Nebius-Hackathon/actions)
+[![Track: Coding & Agentic Engineering](https://img.shields.io/badge/Track-Coding%20%26%20Agentic%20Engineering-orange.svg)](https://devpost.com)
 [![NVIDIA Nemotron](https://img.shields.io/badge/NVIDIA-Nemotron%20MoE-76B900.svg)](https://www.nvidia.com)
 [![Nebius Token Factory](https://img.shields.io/badge/Nebius-Token%20Factory-38BDF8.svg)](https://nebius.com)
+[![Tavily Search](https://img.shields.io/badge/Tavily-Search%20API-4F46E5.svg)](https://tavily.com)
+
+---
+
+### Quick Links
+- 📂 **GitHub Repository**: [`https://github.com/ritesh-1912/Nebius-Hackathon`](https://github.com/ritesh-1912/Nebius-Hackathon)
+- 📝 **Devpost Submission Form**: [`DEVPOST.md`](DEVPOST.md)
+- 🚀 **Production Deployment Guide**: [`DEPLOY.md`](DEPLOY.md) (Render 1-Click & Fly.io)
+- 🛠️ **Platform & Model Feedback**: [`FEEDBACK.md`](FEEDBACK.md)
+- 🔍 **Full Technical & Security Audit**: [`AUDIT.md`](AUDIT.md)
+- 🎨 **Design System Specification**: [`DESIGN.md`](DESIGN.md)
+
+---
+
+## Table of Contents
+1. [Pitch](#pitch)
+2. [What It Does and Who It's For](#what-it-does-and-who-its-for)
+3. [How It Works (The 4 Steps)](#how-it-works)
+4. [Architecture & Agent Pipeline](#architecture)
+5. [How We Use NVIDIA Nemotron (Tri-Tier MoE)](#how-we-use-nvidia-nemotron)
+6. [Where Nebius Token Factory Helped](#where-nebius-token-factory-helped)
+7. [How Tavily Search Is Used](#how-tavily-is-used)
+8. [Competitive Matrix: Why Agentic Verification Matters](#competitive-matrix)
+9. [Prepared Demo Services & Proof of Concept](#prepared-demo-services)
+10. [Security & Agent Integrity Defenses](#security--agent-integrity-defenses)
+11. [Limitations and Honest Caveats](#limitations-and-honest-caveats)
+12. [Local Setup & Run Instructions](#local-setup--run-instructions)
+13. [Docker Setup & Deployment](#docker-setup--deployment)
+14. [Environment Variables Reference](#environment-variables)
+15. [Visual Walkthrough & Screenshots](#screenshots)
+16. [License](#license)
 
 ---
 
 ## Pitch
 
-Every engineering team dreads major dependency upgrades. When foundational libraries like **Pydantic** (v1 → v2) or **SQLAlchemy** (1.4 → 2.0) introduce breaking changes, codebases break across dozens of models and services, documentation is scattered across sprawling changelogs, and developers lose days to trial-and-error refactoring. Generic chat models frequently fail because their training data blends deprecated and modern APIs. **Upgrade Pilot** is an autonomous, closed-loop agentic engineer that provisions an isolated sandbox, reproduces failing tests, grounds its refactoring in official migration guides via **Tavily Search** and **NVIDIA Nemotron 3 Nano**, generates AST-validated code patches with **Nemotron 3 Super**, and iterates until the test suite is 100% green—delivering an architectural plan, verified diff, and PR-ready risk review from **Nemotron 3 Ultra**.
+Every software engineering team dreads major dependency upgrades. When foundational libraries like **Pydantic** (v1 → v2) or **SQLAlchemy** (1.4 → 2.0) introduce breaking changes, codebases break across dozens of models and services, documentation is scattered across sprawling changelogs, and developers lose days to trial-and-error refactoring. Generic chat models frequently fail because their training data blends deprecated and modern APIs.
+
+**Upgrade Pilot** is an autonomous, closed-loop agentic engineer that provisions an isolated sandbox, reproduces failing tests, grounds its refactoring in official migration guides via **Tavily Search** and **NVIDIA Nemotron 3 Nano**, generates AST-validated code patches with **Nemotron 3 Super**, and iterates until the test suite is 100% green—delivering an architectural plan, verified diff, and PR-ready risk review from **Nemotron 3 Ultra**.
 
 ---
 
@@ -34,17 +69,25 @@ Rather than suggesting unverified snippets in a chat window, Upgrade Pilot execu
 The agent executes four sequential stages matching the interface:
 
 ```
-[ 1. Run tests on new version ]
-        ↓
-[ 2. Look up migration guide ]
-        ↓
-[ 3. Patch the code (never tests) ]
-        ↓
-[ 4. Verify and repeat ]
+┌────────────────────────────────┐
+│ 1. Run tests on new version    │  Provision ephemeral sandbox & capture failure tracebacks
+└───────────────┬────────────────┘
+                ▼
+┌────────────────────────────────┐
+│ 2. Look up migration guide     │  Tavily queries official docs; Nemotron Nano summarizes rules
+└───────────────┬────────────────┘
+                ▼
+┌────────────────────────────────┐
+│ 3. Patch the code (never tests)│  Nemotron Super applies AST edits; test files remain immutable
+└───────────────┬────────────────┘
+                ▼
+┌────────────────────────────────┐
+│ 4. Verify and repeat           │  Re-run pytest until 100% green; Nemotron Ultra reviews diff
+└────────────────────────────────┘
 ```
 
 1. **Run tests on new version**: Provisions an ephemeral execution sandbox, installs upgraded dependencies offline from a pre-built wheelhouse, and captures baseline failure tracebacks.
-2. **Look up migration guide**: Queries the official documentation domains via Tavily Search API, and distills raw changelogs into concise, actionable migration rules using Nemotron 3 Nano.
+2. **Look up migration guide**: Queries official documentation domains via the Tavily Search API, and distills raw changelogs into concise, actionable migration rules using Nemotron 3 Nano.
 3. **Patch the code**: Applies targeted code replacements via Nemotron 3 Super. Application source code is updated while test files (`test_*.py`, `conftest.py`, `pytest.ini`) remain strictly immutable.
 4. **Verify and repeat**: Re-runs `pytest` in the sandbox. If tests fail, new tracebacks feed into the next iteration (capped at 5 iterations or 60,000 tokens). Once green, Nemotron 3 Ultra conducts a final diff review.
 
@@ -55,15 +98,15 @@ The agent executes four sequential stages matching the interface:
 ```mermaid
 flowchart TD
     subgraph UI["Frontend (Single-Page App)"]
-        Browser["Developer-Tool Dashboard\n(Vanilla JS + CSS System + SSE)"]
-        DiffUI["Interactive Diff & PR Viewer"]
+        Browser["Developer-Tool Dashboard\n(Vanilla JS + Native CSS + SSE)"]
+        DiffUI["Interactive Unified Diff Viewer"]
         CostGauge["Real-Time Token & Cost Meter"]
     end
 
     subgraph Server["FastAPI Backend (Python 3.11+)"]
         Streamer["SSE Event Streamer\n(/api/upgrade/stream)"]
         BudgetGuard["Rate Limiter & Daily Cap\n(rate_limiter.py)"]
-        Patcher["AST Patcher & Protected-File Guard\n(patcher.py)"]
+        Patcher["AST Patcher & Test Guard\n(patcher.py)"]
     end
 
     subgraph NebiusTF["Nebius Token Factory (OpenAI API)"]
@@ -153,13 +196,71 @@ General LLMs frequently hallucinate deprecated methods or confuse v1 vs v2 synta
 
 ---
 
+## Competitive Matrix
+
+| Capability | Upgrade Pilot | Generic Chat LLM | Static Migration Scripts (2to3 / LibCST) |
+| :--- | :--- | :--- | :--- |
+| **Deterministic Verification** | **100% verified** by real isolated pytest runner | None (hallucinates unverified code) | Syntactic only (no runtime behavioral check) |
+| **Test Suite Immutability** | **Guaranteed in code** (tests cannot be modified) | Often modifies tests to make them artificially pass | Tests unmodified |
+| **Official Documentation Grounding** | **Live Tavily search** with official domain filters | Outdated training cutoff (blends v1/v2 syntax) | None |
+| **Cost Optimization** | **$0.035 – $0.045 / run** via Tri-Tier MoE | $0.20 – $1.00+ on monolithic frontier models | Free |
+| **PR Deliverables & Risk Review** | **Architectural review** analyzing untested edge cases | Generic markdown | None |
+
+---
+
+## Prepared Demo Services
+
+For security and deterministic evaluation, Upgrade Pilot includes two realistic demo services under `demos/`:
+
+```text
+demos/
+├── demo_pydantic/        # Pydantic 1.10.17 → 2.14.1 (Order & User Service)
+│   ├── order_service.py
+│   ├── test_order_service.py (10 tests)
+│   ├── requirements-before.txt
+│   └── requirements-after.txt
+└── demo_sqlalchemy/      # SQLAlchemy 1.4.54 → 2.0.55 (Task Management Service)
+    ├── task_service.py
+    ├── test_task_service.py (8 tests)
+    ├── requirements-before.txt
+    └── requirements-after.txt
+```
+
+### Sandbox Verification Proof (`scripts/verify_sandbox.py`)
+Run `python scripts/verify_sandbox.py` to confirm that both repositories pass 100% on their initial dependency versions and break realistically upon upgrade:
+
+```text
+============================================================================
+ SANDBOX VERIFICATION SUMMARY TABLE
+============================================================================
+DEMO                         | PHASE            | PASSED   | FAILED   | STATUS
+------------------------------------------------------------------------------
+Pydantic (v1 -> v2)          | Before (v1)      | 10       | 0        | PASS (100%)
+Pydantic (v1 -> v2)          | After (v2)       | 0        | 1        | BREAKAGE CONFIRMED
+------------------------------------------------------------------------------
+SQLAlchemy (1.4 -> 2.0)      | Before (1.4)     | 8        | 0        | PASS (100%)
+SQLAlchemy (1.4 -> 2.0)      | After (2.0)      | 6        | 2        | BREAKAGE CONFIRMED
+------------------------------------------------------------------------------
+```
+
+---
+
+## Security & Agent Integrity Defenses
+
+Upgrade Pilot enforces strict production-grade security boundaries:
+1. **Source Code Immutability**: The agent may only modify application source files. Modifying test files (`test_*.py`, `*_test.py`), `conftest.py`, or test configurations (`pytest.ini`, `setup.cfg`, `tox.ini`) is blocked in code and aborts the run with `PatchIntegrityViolationError`.
+2. **Path Traversal Defense**: All patch paths are resolved and validated within the ephemeral sandbox directory; any traversal (`../` or escaping absolute paths) raises `PathTraversalError`.
+3. **Secret Isolation**: Ephemeral subprocess sandboxes run in an environment with all sensitive API keys (`NEBIUS_API_KEY`, `TAVILY_API_KEY`, etc.) completely stripped from the process table. Docker containers run under a non-root `pilot` user (UID 1000).
+4. **Untrusted Web Content Defense**: Tavily search results are explicitly treated as external reference material only; prompt guardrails forbid executing search text as code or following prompt overrides.
+5. **Rate & Spend Quotas**: In-memory sliding window rate limits (5 runs/10 min/IP), hard timeout (300s/run), token budget (60,000/run), and global daily spend cap ($10.00 / 500,000 tokens) with graceful fallback to high-fidelity cached demonstration runs.
+
+---
+
 ## Limitations and Honest Caveats
 
 - **Language Scope**: Currently optimized for Python codebases using `pytest`.
 - **Sandbox Security**: To prevent arbitrary remote code execution on the public server, arbitrary repository uploads are disabled; execution is strictly restricted to the two preset demo repositories.
-- **Demo Scope**: Includes two verified demo services:
-  - `demo_pydantic`: Pydantic 1.10.17 → 2.14.1 (10 tests; fails collection on v2; upgrades Field regex, validators, ConfigDict, serialization).
-  - `demo_sqlalchemy`: SQLAlchemy 1.4.54 → 2.0.55 (8 tests; 2 tests fail on 2.0; upgrades engine.execute removal, session.get, and text constructs).
+- **Demo Scope**: Includes two verified demo services (`demo_pydantic` and `demo_sqlalchemy`).
 - **Execution Caps**: Runs are capped at 5 iterations, 60,000 tokens, and 300 seconds timeout to prevent runaway execution or spend.
 - **Public Spend Cap**: A global daily spend limit ($10.00 / 500,000 tokens) guards the shared demo instance; when reached, users are invited to watch a recorded run.
 

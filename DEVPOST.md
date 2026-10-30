@@ -1,5 +1,11 @@
 # Devpost Project Submission: Upgrade Pilot
 
+**Track:** Coding and Agentic Engineering Track  
+**Submission Repository:** [https://github.com/ritesh-1912/Nebius-Hackathon](https://github.com/ritesh-1912/Nebius-Hackathon)  
+**Built With:** Python, FastAPI, Nebius Token Factory, NVIDIA Nemotron (Ultra 550B, Super 120B, Nano 30B), Tavily Search API, Pytest, Docker, Server-Sent Events (SSE), HTML5 / CSS3  
+
+---
+
 ## Project Tagline
 Autonomous Python dependency migration agent powered by NVIDIA Nemotron MoE on Nebius Token Factory and grounded by real-time Tavily search.
 
@@ -8,7 +14,7 @@ Autonomous Python dependency migration agent powered by NVIDIA Nemotron MoE on N
 ## Inspiration
 
 Every software engineering organization maintains technical debt marked by deferred dependency upgrades. Upgrading foundational libraries like **Pydantic v1 to v2** or **SQLAlchemy 1.4 to 2.0** often demands days of tedious manual refactoring:
-- Foundational APIs are renamed or removed entirely (`Field(regex=...)` replaced by `Field(pattern=...)`, or `engine.execute(...)` string execution removed).
+- Foundational APIs are renamed or removed entirely (`Field(regex=...)` replaced by `Field(pattern=...)`, or `engine.execute(...)` direct string execution removed).
 - Breaking changes ripple across dozens of models and services.
 - Developers waste hours cross-referencing GitHub release notes, scattered migration guides, and failing pytest traces.
 - Standard LLM chat interfaces hallucinate deprecated methods or confuse version APIs because their training data blends v1 and v2 documentation.
@@ -101,3 +107,11 @@ During the submission and review period, we executed a rigorous feature freeze a
 - **Multi-File Dependency Graphs**: Extending beyond isolated services to orchestrate multi-file refactoring across large monorepos with interdependent packages.
 - **Language Expansion**: Adding support for TypeScript / Node.js migrations (e.g., Next.js Pages to App Router, React 17 to 18, or Jest to Vitest).
 - **GitHub App & CI Integration**: Packaging Upgrade Pilot as a GitHub App that automatically opens ready-to-merge Pull Requests with passing test suites whenever Dependabot or Renovate flags a breaking version bump.
+
+---
+
+## Try It Out
+- **GitHub Repository**: [https://github.com/ritesh-1912/Nebius-Hackathon](https://github.com/ritesh-1912/Nebius-Hackathon)
+- **Local Run**: `git clone https://github.com/ritesh-1912/Nebius-Hackathon.git && cd Nebius-Hackathon && pip install -r requirements.txt && uvicorn upgrade_pilot.main:app`
+- **Docker**: `docker run --rm -it -p 8000:8000 --env-file .env upgrade-pilot`
+- **Recorded Runs**: Click **"Watch a recorded run"** in the UI to inspect the full event stream, diff viewer, and PR summary with zero API tokens or credentials required.
