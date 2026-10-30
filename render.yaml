@@ -21,7 +21,15 @@ services:
         sync: false
       - key: DAILY_TOKEN_LIMIT
         value: "500000"
+      - key: DAILY_SPEND_LIMIT_USD
+        value: "10.0"
       - key: MAX_CONCURRENT_RUNS
         value: "1"
       - key: PER_RUN_TIMEOUT_SECONDS
         value: "300"
+      - key: MAX_TOKEN_BUDGET
+        value: "60000"
+      - key: MAX_ITERATIONS
+        value: "5"
+      - key: SANDBOX_TIMEOUT_SECONDS
+        value: "25"

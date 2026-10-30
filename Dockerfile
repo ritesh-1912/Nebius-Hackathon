@@ -21,8 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install project Python requirements
 COPY requirements.txt pyproject.toml /app/
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --retries 5 --timeout 60 -r requirements.txt
 
 # Pre-build local wheelhouse inside the Linux container for instant offline sandbox runs
 COPY scripts/ /app/scripts/
@@ -34,8 +33,8 @@ COPY demos/ /app/demos/
 COPY static/ /app/static/
 COPY src/ /app/src/
 
-# Install the application
-RUN pip install --no-cache-dir -e . --no-deps
+# Set python path so upgrade_pilot package is immediately importable
+ENV PYTHONPATH="/app/src"
 
 # Create non-root user 'pilot' and configure permissions
 RUN useradd -m -u 1000 pilot && \
