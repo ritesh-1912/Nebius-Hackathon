@@ -252,34 +252,38 @@ async def stream_upgrade(
             yield f"data: {json.dumps(refused_evt)}\n\n"
             return
 
+        # 4. Enforce Server Concurrency Limit for Live Runs
+        if not cached:
+            acquired = run_semaphore.acquire(blocking=False)
+            if not acquired:
+                busy_event = {
+                    "event_id": "evt_busy",
+                    "run_id": "run_busy",
+                    "demo_id": canonical_demo,
+                    "step": "INIT",
+                    "iteration": 0,
+                    "max_iterations": 5,
+                    "status": "error",
+                    "message": (
+                        f"Server is currently running an upgrade for another user "
+                        f"(concurrency limit: {settings.MAX_CONCURRENT_RUNS}). "
+                        f"Please wait 30 seconds and retry."
+                    ),
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "payload": {},
+                    "telemetry": {},
+                }
+                yield f"data: {json.dumps(busy_event)}\n\n"
+                return
+
+        # Recorded run explicitly selected OR graceful fallback if API keys are not configured
         if cached or (not settings.NEBIUS_API_KEY):
+            if not cached:
+                run_semaphore.release()
             logger.info(f"Serving recorded run for {canonical_demo}. Reason: cached={cached}, has_key={bool(settings.NEBIUS_API_KEY)}")
             for event in stream_cached_run(demo_name=canonical_demo, step_delay=0.35):
                 yield f"data: {event.model_dump_json()}\n\n"
                 await asyncio.sleep(0.01)
-            return
-
-        # 4. Enforce Server Concurrency Limit
-        acquired = run_semaphore.acquire(blocking=False)
-        if not acquired:
-            busy_event = {
-                "event_id": "evt_busy",
-                "run_id": "run_busy",
-                "demo_id": canonical_demo,
-                "step": "INIT",
-                "iteration": 0,
-                "max_iterations": 5,
-                "status": "error",
-                "message": (
-                    f"Server is currently running an upgrade for another user "
-                    f"(concurrency limit: {settings.MAX_CONCURRENT_RUNS}). "
-                    f"Please wait 30 seconds and retry."
-                ),
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "payload": {},
-                "telemetry": {},
-            }
-            yield f"data: {json.dumps(busy_event)}\n\n"
             return
 
         q: queue.Queue = queue.Queue()

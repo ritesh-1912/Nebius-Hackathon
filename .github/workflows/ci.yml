@@ -27,5 +27,8 @@ jobs:
           pip install -e .
 
       - name: Run Pytest Test Suite
+        env:
+          NEBIUS_API_KEY: "mock-nebius-key-for-ci"
+          TAVILY_API_KEY: "mock-tavily-key-for-ci"
         run: |
           pytest -v --tb=short
