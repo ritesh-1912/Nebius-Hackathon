@@ -61,7 +61,7 @@
   - Self-healing capability: When fed back an AST `SyntaxError` or pytest failure traceback, Super successfully corrected its previous attempt.
 - **Engineering Note on Code Formatting & Parsing**:
   - Nemotron 3 Super naturally formats code as markdown code fences (````python ... ````) or Search/Replace diff markers. Strict JSON parsing of multi-line code often fails due to unescaped quotes or backslashes (`r"^\d{5}$"`).
-  - *Best Practice*: Allowing Super to output Aider-style Search/Replace blocks or full-file markdown blocks, paired with an AST verification fallback and a repair prompt, yielded a near-100% patch application success rate.
+  - *Best Practice*: Allowing Super to output Search/Replace blocks or full-file markdown blocks, paired with an AST verification fallback and a repair prompt, yielded a near-100% patch application success rate.
 
 ### Nemotron 3 Nano (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`)
 - **Role in Upgrade Pilot**: Real-time Tavily search summarization (Step 3).

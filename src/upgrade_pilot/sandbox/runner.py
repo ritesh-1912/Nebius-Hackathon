@@ -219,19 +219,37 @@ class SandboxEnvironment:
         failed = 0
         failed_names: List[str] = []
 
-        # Find individual test results: e.g., "test_order_service.py::test_01 PASSED"
+        # Find unique failed test identifiers from execution lines: e.g., "test_order_service.py::test_01 FAILED"
         for line in stdout.splitlines():
-            if "::" in line:
-                if "PASSED" in line:
-                    passed += 1
-                elif "FAILED" in line:
-                    failed += 1
-                    # Extract test identifier
-                    parts = line.split()
-                    for p in parts:
-                        if "::" in p:
-                            failed_names.append(p.strip())
-                            break
+            s = line.strip()
+            if "::" in s and "FAILED" in s and not s.startswith("FAILED "):
+                for p in s.split():
+                    if "::" in p:
+                        clean_p = p.strip()
+                        if clean_p not in failed_names:
+                            failed_names.append(clean_p)
+                        break
+
+        # Check canonical pytest summary line at the bottom, e.g. "= 2 failed, 6 passed in 0.25s ="
+        summary_found = False
+        for line in reversed(stdout.splitlines()):
+            if "=" in line and ("passed" in line or "failed" in line or "error" in line):
+                p_m = re.search(r"(\d+)\s+passed", line)
+                f_m = re.search(r"(\d+)\s+failed", line)
+                e_m = re.search(r"(\d+)\s+error", line)
+                if p_m or f_m or e_m:
+                    passed = int(p_m.group(1)) if p_m else 0
+                    failed = (int(f_m.group(1)) if f_m else 0) + (int(e_m.group(1)) if e_m else 0)
+                    summary_found = True
+                    break
+
+        if not summary_found:
+            for line in stdout.splitlines():
+                if "::" in line:
+                    if "PASSED" in line:
+                        passed += 1
+                    elif "FAILED" in line:
+                        failed += 1
 
         total = passed + failed
 
