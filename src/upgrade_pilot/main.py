@@ -10,6 +10,7 @@ Includes:
 """
 
 import asyncio
+from contextlib import asynccontextmanager
 import json
 import logging
 import queue
@@ -51,10 +52,21 @@ ALLOWED_DEMOS = {
     "sqlalchemy": "demo_sqlalchemy",
 }
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup verification logging for API keys and service integrations (never logs values)."""
+    has_nebius = bool(settings.NEBIUS_API_KEY and not settings.NEBIUS_API_KEY.startswith("your_"))
+    has_tavily = bool(settings.TAVILY_API_KEY and not settings.TAVILY_API_KEY.startswith("your_"))
+    logger.info(f"Startup check: NEBIUS_API_KEY present: {has_nebius} (Base URL: {settings.NEBIUS_BASE_URL})")
+    logger.info(f"Startup check: TAVILY_API_KEY present: {has_tavily}")
+    yield
+
+
 app = FastAPI(
     title="Upgrade Pilot",
     description="Autonomous Python dependency migration agent powered by NVIDIA Nemotron on Nebius Token Factory",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS middleware for open hosted access
@@ -70,20 +82,6 @@ app.add_middleware(
 STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-
-@app.on_event("startup")
-def startup_checks():
-    """Startup verification logging for API keys and service integrations."""
-    has_tavily = bool(settings.TAVILY_API_KEY and not settings.TAVILY_API_KEY.startswith("your_"))
-    key_preview = f"{settings.TAVILY_API_KEY[:6]}...{settings.TAVILY_API_KEY[-4:]}" if has_tavily else "NOT CONFIGURED"
-    if has_tavily:
-        logger.info("✓ Startup check: TAVILY_API_KEY is present and active. Real-time research enabled.")
-    else:
-        logger.warning("⚠️ Startup check: TAVILY_API_KEY is missing. Agent will operate with 'no external docs available' fallback.")
-
-    has_nebius = bool(settings.NEBIUS_API_KEY and not settings.NEBIUS_API_KEY.startswith("your_"))
-    logger.info(f"Startup check: NEBIUS_API_KEY present: {has_nebius} (Base URL: {settings.NEBIUS_BASE_URL})")
 
 
 @app.get("/")
@@ -108,6 +106,8 @@ def get_favicon():
 @app.get("/health")
 def health_check():
     """Comprehensive health check confirming API status, models, budget, and limits."""
+    has_nebius = bool(settings.NEBIUS_API_KEY and not settings.NEBIUS_API_KEY.startswith("your_"))
+    has_tavily = bool(settings.TAVILY_API_KEY and not settings.TAVILY_API_KEY.startswith("your_"))
     return {
         "status": "healthy",
         "app": "Upgrade Pilot",
@@ -120,7 +120,8 @@ def health_check():
         "max_concurrent_runs": settings.MAX_CONCURRENT_RUNS,
         "per_run_timeout_seconds": settings.PER_RUN_TIMEOUT_SECONDS,
         "allowed_demos": ["demo_pydantic", "demo_sqlalchemy"],
-        "tavily_key_present": bool(settings.TAVILY_API_KEY and not settings.TAVILY_API_KEY.startswith("your_")),
+        "nebius_key_present": has_nebius,
+        "tavily_key_present": has_tavily,
         "budget_telemetry": budget_limiter.get_status(),
         "cached_runs_available": {
             "demo_pydantic": is_cached_available("demo_pydantic"),
@@ -230,26 +231,29 @@ async def stream_upgrade(
                 yield f"data: {json.dumps(err_evt)}\n\n"
                 return
 
-        # 3. Check Daily Token Budget & Cached Fallback
+        # 3. Check Daily Token Budget & Spend Cap
         budget_ok, budget_msg = budget_limiter.check_daily_budget()
-        use_cached = cached or (not budget_ok) or (not settings.NEBIUS_API_KEY)
+        if not cached and not budget_ok:
+            refused_evt = {
+                "event_id": "evt_spend_cap",
+                "run_id": "run_spend_cap",
+                "demo_id": canonical_demo,
+                "step": "INIT",
+                "status": "error",
+                "message": (
+                    f"Daily evaluation spend cap reached: {budget_msg} "
+                    f"New live runs are refused to protect community budget. "
+                    f"Please watch a recorded run instead."
+                ),
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "payload": {},
+                "telemetry": {},
+            }
+            yield f"data: {json.dumps(refused_evt)}\n\n"
+            return
 
-        if use_cached:
-            logger.info(f"Serving cached run for {canonical_demo}. Reason: cached={cached}, budget_ok={budget_ok}")
-            if not budget_ok:
-                notice = {
-                    "event_id": "evt_notice",
-                    "run_id": "run_notice",
-                    "demo_id": canonical_demo,
-                    "step": "INIT",
-                    "status": "running",
-                    "message": f"[Notice] {budget_msg}",
-                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                    "payload": {},
-                    "telemetry": {},
-                }
-                yield f"data: {json.dumps(notice)}\n\n"
-
+        if cached or (not settings.NEBIUS_API_KEY):
+            logger.info(f"Serving recorded run for {canonical_demo}. Reason: cached={cached}, has_key={bool(settings.NEBIUS_API_KEY)}")
             for event in stream_cached_run(demo_name=canonical_demo, step_delay=0.35):
                 yield f"data: {event.model_dump_json()}\n\n"
                 await asyncio.sleep(0.01)

@@ -140,8 +140,20 @@ class SandboxEnvironment:
         cmd = [str(self.pytest_bin), "-v", "--tb=short", "--color=no"]
 
         def _set_limits():
-            """Set process group and POSIX resource limits."""
+            """Set process group, POSIX resource limits, and ensure non-root execution."""
             os.setsid()
+
+            # Ensure non-root execution: drop privileges if process is started as root (e.g. inside container)
+            if hasattr(os, "getuid") and os.getuid() == 0:
+                try:
+                    import pwd
+                    nobody = pwd.getpwnam("nobody")
+                    os.setgroups([])
+                    os.setgid(nobody.pw_gid)
+                    os.setuid(nobody.pw_uid)
+                except Exception as e:
+                    logger.warning(f"Could not drop root privileges in sandbox: {e}")
+
             if resource:
                 try:
                     # Limit CPU time to timeout + 5s

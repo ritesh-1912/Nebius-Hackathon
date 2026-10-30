@@ -300,6 +300,11 @@ function startUpgrade(isCached = false) {
     if (isCached) cachedBanner.classList.remove("hidden");
     else cachedBanner.classList.add("hidden");
   }
+  const cachedBadge = document.getElementById("runHeaderCachedBadge");
+  if (cachedBadge) {
+    if (isCached) cachedBadge.classList.remove("hidden");
+    else cachedBadge.classList.add("hidden");
+  }
 
   // Reset Right Metrics Panel
   renderTestHistory();
@@ -366,18 +371,31 @@ function handleAgentEvent(event) {
 
   // Detect cached run
   if (event.run_id && event.run_id.includes("cached")) {
-    const banner = document.getElementById("cachedRunBanner");
-    if (banner) banner.classList.remove("hidden");
+    document.getElementById("cachedRunBanner")?.classList.remove("hidden");
+    document.getElementById("runHeaderCachedBadge")?.classList.remove("hidden");
   }
 
   // Operational State Detections
   if (event.message) {
-    if (event.message.includes("Tavily") && (event.message.includes("unavailable") || event.message.includes("missing") || event.message.includes("Fallback"))) {
+    if (event.run_id === "run_rejected" || event.message.includes("Access Denied: Only preset hackathon demos")) {
+      showNonHappyState("demo_rejected", { message: event.message });
+      finishRun(false, event.message, false);
+    } else if (event.run_id === "run_ratelimit" || event.message.includes("Rate limit") || event.message.includes("429")) {
+      showNonHappyState("rate_limited", { message: event.message });
+      finishRun(false, event.message, false);
+    } else if (event.run_id === "run_busy" || event.message.includes("concurrency limit") || event.message.includes("running an upgrade for another user")) {
+      showNonHappyState("run_queued", { message: event.message });
+      finishRun(false, event.message, false);
+    } else if (event.run_id === "run_spend_cap" || event.message.includes("spend cap reached") || event.message.includes("Daily evaluation spend cap")) {
+      showNonHappyState("daily_budget_reached", { message: event.message });
+      finishRun(false, event.message, false);
+    } else if (event.run_id === "run_timeout" || event.message.includes("maximum allowed duration") || event.message.includes("exceeded maximum allowed duration")) {
+      showNonHappyState("timeout_reached", { message: event.message });
+      finishRun(false, event.message, false);
+    } else if (event.message.includes("Token budget cap") || event.message.includes("Hard cap reached")) {
+      showNonHappyState("token_cap_reached", { message: event.message });
+    } else if (event.message.includes("Tavily") && (event.message.includes("unavailable") || event.message.includes("missing") || event.message.includes("Fallback"))) {
       showNonHappyState("tavily_failure", { message: event.message });
-    } else if (event.message.includes("Rate limit") || event.message.includes("429")) {
-      showNonHappyState("rate_limited");
-    } else if (event.message.includes("Daily budget") || event.message.includes("token budget") || event.message.includes("spend limit")) {
-      showNonHappyState("daily_budget_reached");
     } else if (event.message.includes("Model") && event.message.includes("retry")) {
       showNonHappyState("model_api_failure", { message: event.message });
     }
@@ -1455,7 +1473,40 @@ function showNonHappyState(stateName, customData = {}) {
   card.classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 
-  if (stateName === "first_load_skeleton") {
+  if (stateName === "demo_rejected") {
+    card.className = "state-alert-card state-type-error";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`;
+    title.innerText = "Demo not permitted";
+    desc.innerText = customData.message || "Only the two preset hackathon demos ('demo_pydantic' and 'demo_sqlalchemy') are permitted. Uploaded or arbitrary codebases are disabled for security.";
+    badge.innerText = "Demo Rejected";
+    badge.className = "status-badge status-error";
+    actions.innerHTML = `
+      <button onclick="navBackToDemos()" class="btn btn-primary btn-sm">Back to allowed demos</button>
+      <button onclick="dismissStateAlert()" class="btn btn-ghost btn-sm">Dismiss</button>
+    `;
+  } else if (stateName === "token_cap_reached") {
+    card.className = "state-alert-card state-type-warning";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    title.innerText = "Token cap reached";
+    desc.innerText = customData.message || "Upgrade Pilot reached the per-run token budget cap (60,000 tokens) before all tests passed.";
+    badge.innerText = "Cap Reached (Tokens)";
+    badge.className = "status-badge status-warning";
+    actions.innerHTML = `
+      <button onclick="switchResultTab('changes'); document.getElementById('finalResultsSection')?.scrollIntoView({behavior: 'smooth'});" class="btn btn-primary btn-sm">Inspect partial changes</button>
+      <button onclick="runAgain()" class="btn btn-secondary btn-sm">Run again</button>
+    `;
+  } else if (stateName === "timeout_reached") {
+    card.className = "state-alert-card state-type-warning";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    title.innerText = "Execution timeout reached";
+    desc.innerText = customData.message || "The upgrade process exceeded the maximum allowed duration of 300 seconds.";
+    badge.innerText = "Timeout (300s)";
+    badge.className = "status-badge status-warning";
+    actions.innerHTML = `
+      <button onclick="startUpgrade(true)" class="btn btn-primary btn-sm">Watch recorded run instead</button>
+      <button onclick="startUpgrade(false)" class="btn btn-secondary btn-sm">Retry upgrade</button>
+    `;
+  } else if (stateName === "first_load_skeleton") {
     card.className = "state-alert-card state-type-info";
     icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
     title.innerText = "Loading Upgrade Pilot...";
@@ -1491,13 +1542,13 @@ function showNonHappyState(stateName, customData = {}) {
   } else if (stateName === "daily_budget_reached") {
     card.className = "state-alert-card state-type-warning";
     icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
-    title.innerText = "Daily token budget reached";
-    desc.innerText = "Today's community token allocation on Nebius Token Factory has been fully consumed. You can still test and inspect the full upgrade workflow using our cached run.";
+    title.innerText = "Daily spend cap reached";
+    desc.innerText = customData.message || "Today's community spend cap on Nebius Token Factory has been reached. You can test and inspect the full upgrade workflow using a recorded run with zero API costs.";
     badge.innerText = "Spend Limit Enforced";
     badge.className = "status-badge status-warning";
     actions.innerHTML = `
-      <button onclick="startUpgrade(true)" class="btn btn-primary btn-sm">Play recorded run</button>
-      <button onclick="dismissStateAlert()" class="btn btn-ghost btn-sm">Dismiss</button>
+      <button onclick="startUpgrade(true)" class="btn btn-primary btn-sm">Watch a recorded run</button>
+      <button onclick="navBackToDemos()" class="btn btn-secondary btn-sm">Back to demos</button>
     `;
   } else if (stateName === "tavily_failure") {
     card.className = "state-alert-card state-type-warning";
