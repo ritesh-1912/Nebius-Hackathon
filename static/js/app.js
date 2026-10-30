@@ -20,6 +20,7 @@ let lastIteration = 0;
 let lastMaxIterations = 5;
 let lastCompletionMessage = "";
 let lastCostTracker = null;
+let lastTelemetry = null;
 let reconnectAttempts = 0;
 let reconnectTimeout = null;
 let isRunCompleted = false;
@@ -260,6 +261,8 @@ function startUpgrade(isCached = false) {
   lastDiff = "";
   lastPrSummary = "";
   lastTestSummary = null;
+  lastTelemetry = null;
+  lastCostTracker = null;
   lastChangedFiles = [];
   lastIteration = 0;
   lastCompletionMessage = "";
@@ -382,9 +385,11 @@ function handleAgentEvent(event) {
   updateStepper(event.step, event.status, event.iteration);
 
   // Update Telemetry Panel
-  if (event.cost_tracker) {
-    lastCostTracker = event.cost_tracker;
-    updateUsageMetrics(event.cost_tracker, event.iteration, event.max_iterations);
+  const tel = event.telemetry || event.cost_tracker;
+  if (tel && (tel.cumulative || tel.total_tokens !== undefined || tel.tiers)) {
+    lastTelemetry = tel;
+    lastCostTracker = tel;
+    updateUsageMetrics(tel, event.iteration, event.max_iterations);
   }
 
   // Update Test Metrics History
@@ -824,44 +829,59 @@ function resetUsageMetrics() {
   if (iterBadge) iterBadge.innerText = "Iter 0 of 5";
 }
 
+function extractTelemetry(t) {
+  if (!t) return null;
+  const cum = t.cumulative || t;
+  const tiers = cum.tiers || t.tier_usage || {};
+  const totalTokens = cum.total_tokens !== undefined ? cum.total_tokens : 0;
+  const totalCostUsd = cum.total_cost_usd !== undefined ? cum.total_cost_usd : (cum.cost_usd || 0);
+  const tavilyCalls = cum.tavily_calls !== undefined ? cum.tavily_calls : (t.tavily_usage ? t.tavily_usage.api_calls : 0);
+  return {
+    cum,
+    tiers,
+    totalTokens,
+    totalCostUsd,
+    tavilyCalls
+  };
+}
+
 function updateUsageMetrics(tracker, iteration, maxIterations) {
-  const cum = tracker.cumulative;
-  const tiers = tracker.tier_usage;
+  const data = extractTelemetry(tracker);
+  if (!data) return;
 
   const iterBadge = document.getElementById("runIterationUsageBadge");
   if (iterBadge) iterBadge.innerText = `Iter ${iteration} of ${maxIterations || 5}`;
 
   // Ultra
-  if (tiers.ultra) {
+  if (data.tiers.ultra) {
     const t = document.getElementById("usageTokensUltra");
     const c = document.getElementById("usageCostUltra");
-    if (t) t.innerText = tiers.ultra.total_tokens.toLocaleString();
-    if (c) c.innerText = `$${tiers.ultra.cost_usd.toFixed(6)}`;
+    if (t) t.innerText = (data.tiers.ultra.total_tokens || 0).toLocaleString();
+    if (c) c.innerText = `$${(data.tiers.ultra.cost_usd || 0).toFixed(6)}`;
   }
   // Super
-  if (tiers.super) {
+  if (data.tiers.super) {
     const t = document.getElementById("usageTokensSuper");
     const c = document.getElementById("usageCostSuper");
-    if (t) t.innerText = tiers.super.total_tokens.toLocaleString();
-    if (c) c.innerText = `$${tiers.super.cost_usd.toFixed(6)}`;
+    if (t) t.innerText = (data.tiers.super.total_tokens || 0).toLocaleString();
+    if (c) c.innerText = `$${(data.tiers.super.cost_usd || 0).toFixed(6)}`;
   }
   // Nano
-  if (tiers.nano) {
+  if (data.tiers.nano) {
     const t = document.getElementById("usageTokensNano");
     const c = document.getElementById("usageCostNano");
-    if (t) t.innerText = tiers.nano.total_tokens.toLocaleString();
-    if (c) c.innerText = `$${tiers.nano.cost_usd.toFixed(6)}`;
+    if (t) t.innerText = (data.tiers.nano.total_tokens || 0).toLocaleString();
+    if (c) c.innerText = `$${(data.tiers.nano.cost_usd || 0).toFixed(6)}`;
   }
   // Tavily
-  if (tracker.tavily_usage) {
-    const tc = document.getElementById("usageTavilyCalls");
-    if (tc) tc.innerText = `${tracker.tavily_usage.api_calls} calls`;
-  }
+  const tc = document.getElementById("usageTavilyCalls");
+  if (tc) tc.innerText = `${data.tavilyCalls} calls`;
+
   // Total
   const totT = document.getElementById("usageTotalTokens");
   const totC = document.getElementById("usageTotalCost");
-  if (totT) totT.innerText = cum.total_tokens.toLocaleString();
-  if (totC) totC.innerText = `$${cum.total_cost_usd.toFixed(6)}`;
+  if (totT) totT.innerText = data.totalTokens.toLocaleString();
+  if (totC) totC.innerText = `$${data.totalCostUsd.toFixed(6)}`;
 }
 
 // --------------------------------------------------------------------------
@@ -1250,41 +1270,35 @@ function renderRunDetailsTab() {
   const iterEl = document.getElementById("detailIterations");
   if (iterEl) iterEl.innerText = `${lastIteration || 1} of ${lastMaxIterations || 5}`;
 
-  // Tavily Searches
-  const tavilyEl = document.getElementById("detailTavilySearches");
-  const searchCount = (lastCostTracker && lastCostTracker.tavily_usage) ? lastCostTracker.tavily_usage.api_calls : 0;
-  if (tavilyEl) tavilyEl.innerText = `${searchCount} queries (${uniqueSources.size} rules)`;
-
   // Total Cost & Tokens
   const totalCostEl = document.getElementById("detailTotalCost");
   const totalTokensEl = document.getElementById("detailTotalTokens");
   const sumTokensEl = document.getElementById("detailSumTokens");
   const sumCostEl = document.getElementById("detailSumCost");
+  const tavilyEl = document.getElementById("detailTavilySearches");
 
-  if (lastCostTracker) {
-    const cum = lastCostTracker.cumulative;
-    if (totalCostEl) totalCostEl.innerText = `$${cum.total_cost_usd.toFixed(6)}`;
-    if (totalTokensEl) totalTokensEl.innerText = `${cum.total_tokens.toLocaleString()} tokens total`;
-    if (sumTokensEl) sumTokensEl.innerText = cum.total_tokens.toLocaleString();
-    if (sumCostEl) sumCostEl.innerText = `$${cum.total_cost_usd.toFixed(6)}`;
+  const data = extractTelemetry(lastTelemetry || lastCostTracker);
+  if (data) {
+    if (tavilyEl) tavilyEl.innerText = `${data.tavilyCalls} queries (${uniqueSources.size} rules)`;
+    if (totalCostEl) totalCostEl.innerText = `$${data.totalCostUsd.toFixed(6)}`;
+    if (totalTokensEl) totalTokensEl.innerText = `${data.totalTokens.toLocaleString()} tokens total`;
+    if (sumTokensEl) sumTokensEl.innerText = data.totalTokens.toLocaleString();
+    if (sumCostEl) sumCostEl.innerText = `$${data.totalCostUsd.toFixed(6)}`;
 
     // Breakdown table
-    const tiers = lastCostTracker.tier_usage;
-    if (tiers.ultra) {
-      document.getElementById("detailUltraTokens").innerText = tiers.ultra.total_tokens.toLocaleString();
-      document.getElementById("detailUltraCost").innerText = `$${tiers.ultra.cost_usd.toFixed(6)}`;
+    if (data.tiers.ultra) {
+      document.getElementById("detailUltraTokens").innerText = (data.tiers.ultra.total_tokens || 0).toLocaleString();
+      document.getElementById("detailUltraCost").innerText = `$${(data.tiers.ultra.cost_usd || 0).toFixed(6)}`;
     }
-    if (tiers.super) {
-      document.getElementById("detailSuperTokens").innerText = tiers.super.total_tokens.toLocaleString();
-      document.getElementById("detailSuperCost").innerText = `$${tiers.super.cost_usd.toFixed(6)}`;
+    if (data.tiers.super) {
+      document.getElementById("detailSuperTokens").innerText = (data.tiers.super.total_tokens || 0).toLocaleString();
+      document.getElementById("detailSuperCost").innerText = `$${(data.tiers.super.cost_usd || 0).toFixed(6)}`;
     }
-    if (tiers.nano) {
-      document.getElementById("detailNanoTokens").innerText = tiers.nano.total_tokens.toLocaleString();
-      document.getElementById("detailNanoCost").innerText = `$${tiers.nano.cost_usd.toFixed(6)}`;
+    if (data.tiers.nano) {
+      document.getElementById("detailNanoTokens").innerText = (data.tiers.nano.total_tokens || 0).toLocaleString();
+      document.getElementById("detailNanoCost").innerText = `$${(data.tiers.nano.cost_usd || 0).toFixed(6)}`;
     }
-    if (lastCostTracker.tavily_usage) {
-      document.getElementById("detailTavilyCalls").innerText = `${lastCostTracker.tavily_usage.api_calls} calls`;
-    }
+    document.getElementById("detailTavilyCalls").innerText = `${data.tavilyCalls} calls`;
   }
 }
 
