@@ -95,6 +95,16 @@ def get_index():
     return FileResponse(index_file, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"])
+def get_favicon():
+    """Serve the SVG favicon for browser tab icon."""
+    favicon_file = STATIC_DIR / "favicon.svg"
+    if favicon_file.exists():
+        return FileResponse(favicon_file, media_type="image/svg+xml")
+    raise HTTPException(status_code=404, detail="Favicon not found")
+
+
+
 @app.get("/health")
 def health_check():
     """Comprehensive health check confirming API status, models, budget, and limits."""

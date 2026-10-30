@@ -3,11 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Upgrade Pilot — Dependency Migration Agent</title>
+  <title>Upgrade Pilot — Autonomous Dependency Migration Agent</title>
+  <meta name="description" content="Upgrade breaking Python dependencies with an agent that reads failing tests, researches official migration guides via Tavily, and proves its fix in an isolated sandbox.">
+  <meta name="keywords" content="python, dependency migration, pydantic v2, sqlalchemy 2.0, nebius, nvidia nemotron, tavily, automated refactoring">
+  <meta name="author" content="Upgrade Pilot">
+  <meta name="theme-color" content="#09090b" id="themeColorMeta">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="http://127.0.0.1:8000/">
+  <meta property="og:title" content="Upgrade Pilot — Autonomous Dependency Migration Agent">
+  <meta property="og:description" content="Upgrade breaking Python dependencies with an agent that reads failing tests, researches official migration guides via Tavily, and proves its fix in an isolated sandbox.">
+  <meta property="og:image" content="/static/favicon.svg">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Upgrade Pilot — Autonomous Dependency Migration Agent">
+  <meta name="twitter:description" content="Upgrade breaking Python dependencies with an agent that reads failing tests, researches official migration guides via Tavily, and proves its fix in an isolated sandbox.">
+  <meta name="twitter:image" content="/static/favicon.svg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
+
   <!-- Marked.js for Markdown Rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <!-- Custom Design System Stylesheet -->
-  <link rel="stylesheet" href="/static/css/styles.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/styles.css?v=2.2">
 </head>
 <body>
 
@@ -58,7 +80,7 @@
 
     <!-- 3. THE PROBLEM -->
     <section class="problem-section">
-      <div class="section-label">The problem</div>
+      <h2 class="section-label">The problem</h2>
       <p class="problem-text">
         Major dependency upgrades often break working code with deprecated APIs, removed methods, and changed runtime behavior. Fixing these issues requires developers to spend hours reading through changelogs and debugging by trial and error.
       </p>
@@ -66,7 +88,7 @@
 
     <!-- 4. HOW IT WORKS -->
     <section id="how-it-works" class="how-it-works-section">
-      <div class="section-label">How it works</div>
+      <h2 class="section-label">How it works</h2>
       <div class="steps-grid">
         <div class="step-card">
           <div class="step-num">1</div>
@@ -93,7 +115,7 @@
 
     <!-- 5. TRY IT (DEMO CARDS) -->
     <section id="demos" class="demos-container">
-      <div class="section-label">Try it</div>
+      <h2 class="section-label">Try it</h2>
       <div class="demo-cards-grid" role="radiogroup" aria-label="Select Python migration demo">
 
         <!-- Demo Card 1: Pydantic -->
@@ -210,7 +232,8 @@
           <span class="summary-sub">Models, sandbox architecture, and safety limits</span>
         </summary>
         <div class="accordion-content">
-          <table class="spec-table">
+          <div class="table-responsive">
+            <table class="spec-table">
             <thead>
               <tr>
                 <th>Component</th>
@@ -251,6 +274,7 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </details>
     </section>
@@ -270,7 +294,7 @@
           <span>Back to demos</span>
         </button>
         <span style="color: var(--border-active);" aria-hidden="true">|</span>
-        <span id="runHeaderDemoName" class="run-header-title">Pydantic v1 → v2 Migration</span>
+        <h1 id="runHeaderDemoName" class="run-header-title">Pydantic v1 → v2 Migration</h1>
         <span id="runHeaderVersion" class="version-pill">pydantic 1.10.17 → 2.14.1</span>
       </div>
       <div class="run-header-right">
@@ -336,7 +360,7 @@
 
       <!-- LEFT COLUMN: Stepper -->
       <aside id="stepperPanel" class="stepper-panel" aria-label="Migration Phases">
-        <div class="stepper-header">Migration Phases</div>
+        <h2 class="stepper-header">Migration Phases</h2>
         <div class="stepper-list">
           <!-- Phase 1: Baseline -->
           <div id="stepPhaseBaseline" class="stepper-item">
@@ -393,7 +417,7 @@
       <section id="activityPanel" class="activity-panel" aria-label="Activity Feed">
         <div class="activity-header">
           <div class="activity-title">
-            <span>Activity Feed</span>
+            <h2 class="activity-title-text">Activity Feed</h2>
             <span id="runEventCount" class="version-pill">0 events</span>
           </div>
           <span style="font-size: 11px; color: var(--text-tertiary);">Click rows to inspect details</span>
@@ -417,7 +441,7 @@
         <!-- Card 1: Tests -->
         <div id="metricCardTests" class="metric-card">
           <div class="metric-card-title">
-            <span>Tests</span>
+            <h2 class="metric-card-heading">Tests</h2>
             <span id="currentTestSummaryBadge" class="status-badge status-ready">0 / 0 Passing</span>
           </div>
           <div class="test-history-list" id="testHistoryList">
@@ -428,7 +452,7 @@
         <!-- Card 2: Sources -->
         <div id="metricCardSources" class="metric-card">
           <div class="metric-card-title">
-            <span>Documentation Sources</span>
+            <h2 class="metric-card-heading">Documentation Sources</h2>
             <span id="sourcesCountBadge" class="version-pill">0</span>
           </div>
           <div id="runSourcesList" class="sources-list">
@@ -441,7 +465,7 @@
         <!-- Card 3: Usage -->
         <div id="metricCardUsage" class="metric-card">
           <div class="metric-card-title">
-            <span>Usage & Spend</span>
+            <h2 class="metric-card-heading">Usage & Spend</h2>
             <span id="runIterationUsageBadge" class="version-pill">Iter 0 of 5</span>
           </div>
           <table class="usage-table">
@@ -581,13 +605,13 @@
 
         <!-- Official Documentation Sources Used -->
         <div class="summary-sources-section">
-          <h4 class="summary-section-title">Official Documentation Sources Used</h4>
+          <h3 class="summary-section-title">Official Documentation Sources Used</h3>
           <div id="summarySourcesList" class="summary-sources-list"></div>
         </div>
 
         <!-- Ultra Review Notes -->
         <div class="summary-ultra-notes">
-          <h4 class="summary-section-title">Nemotron 3 Ultra Architectural Review Notes</h4>
+          <h3 class="summary-section-title">Nemotron 3 Ultra Architectural Review Notes</h3>
           <div id="ultraNotesContent" class="ultra-notes-content">
             Nemotron 3 Ultra confirmed that all deprecated validation mechanisms, regex filters, and configuration patterns were successfully migrated without modifying existing pytest assertions. All 10 unit tests executed and passed cleanly inside the isolated Python sandbox.
           </div>
@@ -623,49 +647,51 @@
 
         <!-- Tier Breakdown Table -->
         <div class="detail-breakdown-card">
-          <h4 class="detail-card-title">Compute & Model Usage Breakdown by Tier</h4>
-          <table class="detail-breakdown-table">
-            <thead>
-              <tr>
-                <th>Component / Service</th>
-                <th>Role in Migration Pipeline</th>
-                <th>Tokens / Calls</th>
-                <th>Est. Cost</th>
-              </tr>
-            </thead>
-            <tbody id="detailBreakdownBody">
-              <tr>
-                <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Ultra (550B)</td>
-                <td>Reasoning, Planning & Final PR Review</td>
-                <td id="detailUltraTokens">0</td>
-                <td id="detailUltraCost">$0.000000</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Super (120B)</td>
-                <td>AST Code Patch Generation</td>
-                <td id="detailSuperTokens">0</td>
-                <td id="detailSuperCost">$0.000000</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Nano (30B)</td>
-                <td>Documentation Query Synthesis & Summarization</td>
-                <td id="detailNanoTokens">0</td>
-                <td id="detailNanoCost">$0.000000</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 500; color: var(--text-primary);">Tavily Search API</td>
-                <td>Official Migration Guide Retrieval</td>
-                <td id="detailTavilyCalls">0 calls</td>
-                <td>$0.000000</td>
-              </tr>
-              <tr style="border-top: 1px solid var(--border-active); font-weight: 600;">
-                <td style="color: var(--text-primary);">Total Usage</td>
-                <td style="color: var(--text-secondary);">Combined Token Factory Quota</td>
-                <td id="detailSumTokens" style="color: var(--text-primary);">0</td>
-                <td id="detailSumCost" style="color: var(--text-primary);">$0.000000</td>
-              </tr>
-            </tbody>
-          </table>
+          <h3 class="detail-card-title">Compute & Model Usage Breakdown by Tier</h3>
+          <div class="table-responsive">
+            <table class="detail-breakdown-table">
+              <thead>
+                <tr>
+                  <th>Component / Service</th>
+                  <th>Role in Migration Pipeline</th>
+                  <th>Tokens / Calls</th>
+                  <th>Est. Cost</th>
+                </tr>
+              </thead>
+              <tbody id="detailBreakdownBody">
+                <tr>
+                  <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Ultra (550B)</td>
+                  <td>Reasoning, Planning & Final PR Review</td>
+                  <td id="detailUltraTokens">0</td>
+                  <td id="detailUltraCost">$0.000000</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Super (120B)</td>
+                  <td>AST Code Patch Generation</td>
+                  <td id="detailSuperTokens">0</td>
+                  <td id="detailSuperCost">$0.000000</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Nano (30B)</td>
+                  <td>Documentation Query Synthesis & Summarization</td>
+                  <td id="detailNanoTokens">0</td>
+                  <td id="detailNanoCost">$0.000000</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 500; color: var(--text-primary);">Tavily Search API</td>
+                  <td>Official Migration Guide Retrieval</td>
+                  <td id="detailTavilyCalls">0 calls</td>
+                  <td>$0.000000</td>
+                </tr>
+                <tr style="border-top: 1px solid var(--border-active); font-weight: 600;">
+                  <td style="color: var(--text-primary);">Total Usage</td>
+                  <td style="color: var(--text-secondary);">Combined Token Factory Quota</td>
+                  <td id="detailSumTokens" style="color: var(--text-primary);">0</td>
+                  <td id="detailSumCost" style="color: var(--text-primary);">$0.000000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -695,6 +721,6 @@
   </div>
 
   <!-- Application Script -->
-  <script src="/static/js/app.js?v=2.1"></script>
+  <script src="/static/js/app.js?v=2.2"></script>
 </body>
 </html>

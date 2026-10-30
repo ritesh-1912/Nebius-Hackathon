@@ -22,8 +22,8 @@
 
   /* Typography */
   --text-primary: #09090b;
-  --text-secondary: #71717a;
-  --text-tertiary: #a1a1aa;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
   --text-inverse: #ffffff;
 
   /* ONE Brand Accent (Technical Blue) */
@@ -85,7 +85,7 @@
 
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
-  --text-tertiary: #71717a;
+  --text-tertiary: #8e8e98;
   --text-inverse: #09090b;
 
   --accent-base: #3b82f6;
@@ -272,7 +272,8 @@ code, pre, .font-mono {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
-  margin-bottom: 12px;
+  margin: 0 0 12px 0;
+  line-height: 1.2;
 }
 
 /* --------------------------------------------------------------------------
@@ -1393,6 +1394,12 @@ code, pre, .font-mono {
   margin-top: 4px;
 }
 
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .detail-card-title {
   font-size: 13px;
   font-weight: 600;
@@ -1402,6 +1409,7 @@ code, pre, .font-mono {
 
 .detail-breakdown-table {
   width: 100%;
+  min-width: 460px;
   border-collapse: collapse;
   font-size: 12px;
 }
@@ -1801,6 +1809,8 @@ code, pre, .font-mono {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .run-header-right {
@@ -1883,6 +1893,8 @@ code, pre, .font-mono {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .stepper-list {
@@ -2000,6 +2012,14 @@ code, pre, .font-mono {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.activity-title-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .activity-scroll-area {
@@ -2135,6 +2155,16 @@ code, pre, .font-mono {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.metric-card-heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.2;
 }
 
 /* Test Sparkline / Horizontal Iteration Bars */

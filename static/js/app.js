@@ -82,6 +82,11 @@ function toggleTheme() {
   document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   localStorage.setItem("theme", isDark ? "dark" : "light");
   updateThemeIcons(isDark);
+
+  const metaThemeColor = document.getElementById("themeColorMeta");
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute("content", isDark ? "#09090b" : "#ffffff");
+  }
 }
 
 function updateThemeIcons(isDark) {
@@ -94,6 +99,10 @@ function updateThemeIcons(isDark) {
   } else {
     sun.classList.add("hidden");
     moon.classList.remove("hidden");
+  }
+  const metaThemeColor = document.getElementById("themeColorMeta");
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute("content", isDark ? "#09090b" : "#ffffff");
   }
 }
 
@@ -583,7 +592,7 @@ function appendActivityRow(event) {
   else if (event.status === "running") statusDotColor = "var(--accent-base)";
 
   const summaryHtml = `
-    <div class="activity-row-summary" onclick="toggleActivityRow(this)">
+    <div class="activity-row-summary" onclick="toggleActivityRow(this)" onkeydown="handleActivityRowKey(event, this)" tabindex="0" role="button" aria-expanded="false" aria-label="Toggle event details: ${escapeHtml(plainTitle)}">
       <div class="activity-row-left">
         <span class="status-dot" style="background-color: ${statusDotColor}; flex-shrink: 0;"></span>
         <span class="truncate">${escapeHtml(plainTitle)}</span>
@@ -660,16 +669,30 @@ function appendActivityRow(event) {
   row.innerHTML = summaryHtml + `<div class="activity-row-details">${detailsHtml}</div>`;
   feed.appendChild(row);
 
+  // Performance cap: prevent unbounded DOM memory expansion on long runs
+  const MAX_FEED_ROWS = 100;
+  while (feed.children.length > MAX_FEED_ROWS) {
+    feed.removeChild(feed.firstElementChild);
+  }
+
   // Auto-scroll if enabled
   if (isAutoScrollEnabled) {
     feed.scrollTop = feed.scrollHeight;
   }
 }
 
+function handleActivityRowKey(event, summaryEl) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    toggleActivityRow(summaryEl);
+  }
+}
+
 function toggleActivityRow(summaryEl) {
   const row = summaryEl.closest(".activity-row");
   if (row) {
-    row.classList.toggle("expanded");
+    const isExpanded = row.classList.toggle("expanded");
+    summaryEl.setAttribute("aria-expanded", isExpanded ? "true" : "false");
   }
 }
 
@@ -1130,7 +1153,7 @@ function renderUnifiedDiffViewer(files) {
 
     return `
       <div class="diff-file-card" id="diffFileCard_${fileIdx}">
-        <div class="diff-file-header" onclick="toggleDiffFile(this)">
+        <div class="diff-file-header" onclick="toggleDiffFile(this)" onkeydown="handleDiffFileKey(event, this)" tabindex="0" role="button" aria-expanded="true" aria-label="Toggle diff for ${escapeHtml(f.name)}">
           <div class="diff-file-header-left">
             <svg class="diff-file-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             <span class="diff-file-name">${escapeHtml(f.name)}</span>
@@ -1155,10 +1178,18 @@ function renderUnifiedDiffViewer(files) {
   }).join("");
 }
 
+function handleDiffFileKey(event, headerEl) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    toggleDiffFile(headerEl);
+  }
+}
+
 function toggleDiffFile(headerEl) {
   const card = headerEl.closest(".diff-file-card");
   if (card) {
-    card.classList.toggle("collapsed");
+    const isCollapsed = card.classList.toggle("collapsed");
+    headerEl.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
   }
 }
 
