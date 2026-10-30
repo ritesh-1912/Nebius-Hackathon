@@ -456,13 +456,26 @@ function handleAgentEvent(event) {
 // --------------------------------------------------------------------------
 const PHASES = ["Baseline", "Plan", "Research", "Patch", "Verify", "Review"];
 
+const PHASE_ICONS = {
+  Baseline: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2v6a2 2 0 0 0 .586 1.414l4.828 4.828A2 2 0 0 1 20 15.657V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4.343a2 2 0 0 1 .586-1.414l4.828-4.828A2 2 0 0 0 10 8V2"/><line x1="14" y1="2" x2="10" y2="2"/></svg>`,
+  Plan: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+  Research: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+  Patch: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  Verify: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  Review: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`
+};
+
+const STEPPER_CHECK_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+
 function resetStepper() {
   PHASES.forEach((p, idx) => {
     const item = document.getElementById(`stepPhase${p}`);
     const node = document.getElementById(`nodePhase${p}`);
     if (item) item.className = "stepper-item";
-    if (node) node.innerText = String(idx + 1);
+    if (node) node.innerHTML = PHASE_ICONS[p] || String(idx + 1);
   });
+  const progressLine = document.getElementById("stepperProgressLine");
+  if (progressLine) progressLine.style.height = "0%";
   setStepperPhase("Baseline", "active");
 }
 
@@ -473,10 +486,19 @@ function setStepperPhase(phaseName, state, badgeText = "") {
 
   item.className = `stepper-item ${state}`;
   if (state === "completed") {
-    node.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
-  } else if (state === "active") {
-    const idx = PHASES.indexOf(phaseName) + 1;
-    node.innerText = String(idx);
+    node.innerHTML = STEPPER_CHECK_ICON;
+  } else {
+    node.innerHTML = PHASE_ICONS[phaseName] || String(PHASES.indexOf(phaseName) + 1);
+  }
+
+  // Update animated progress connector line
+  const progressLine = document.getElementById("stepperProgressLine");
+  if (progressLine) {
+    const idx = PHASES.indexOf(phaseName);
+    if (idx >= 0) {
+      const pct = (idx / (PHASES.length - 1)) * 100;
+      progressLine.style.height = `${pct}%`;
+    }
   }
 }
 
@@ -617,10 +639,26 @@ function appendActivityRow(event) {
   else if (event.status === "success") statusDotColor = "var(--success-fg)";
   else if (event.status === "running") statusDotColor = "var(--accent-base)";
 
+  // Model Tier attribution
+  let tierInfo = { name: "System", color: "var(--text-tertiary)", tierClass: "system" };
+  if (event.step === "PLANNING" || event.step === "REVIEW") {
+    tierInfo = { name: "Ultra 550B", color: "var(--tier-ultra)", tierClass: "ultra" };
+  } else if (event.step === "PATCHING") {
+    tierInfo = { name: "Super 120B", color: "var(--tier-super)", tierClass: "super" };
+  } else if (event.step === "RESEARCH") {
+    tierInfo = { name: "Nano 30B", color: "var(--tier-nano)", tierClass: "nano" };
+  } else if (event.step === "BASELINE_TEST" || event.step === "VERIFYING") {
+    tierInfo = { name: "Sandbox", color: "var(--text-secondary)", tierClass: "sandbox" };
+  }
+
   const summaryHtml = `
     <div class="activity-row-summary" onclick="toggleActivityRow(this)" onkeydown="handleActivityRowKey(event, this)" tabindex="0" role="button" aria-expanded="false" aria-label="Toggle event details: ${escapeHtml(plainTitle)}">
       <div class="activity-row-left">
         <span class="status-dot" style="background-color: ${statusDotColor}; flex-shrink: 0;"></span>
+        <span class="activity-tier-pill activity-tier-${tierInfo.tierClass}">
+          <span class="tier-pill-dot" style="background-color: ${tierInfo.color};"></span>
+          <span class="tier-pill-label">${tierInfo.name}</span>
+        </span>
         <span class="truncate">${escapeHtml(plainTitle)}</span>
       </div>
       <div class="activity-row-right">
@@ -723,17 +761,38 @@ function toggleActivityRow(summaryEl) {
 }
 
 // --------------------------------------------------------------------------
-// Right Panel: Tests History (Sparklines / Bars)
+// Right Panel: Tests History (Sparklines / Bars & Square Matrix)
 // --------------------------------------------------------------------------
 function recordTestSummary(ts, iteration, step) {
   lastTestSummary = ts;
   const pct = ts.total > 0 ? Math.round((ts.passed / ts.total) * 100) : 0;
 
-  // Update current badge
+  // Update current badge with tabular numbers
   const badge = document.getElementById("currentTestSummaryBadge");
   if (badge) {
-    badge.innerText = `${ts.passed} / ${ts.total} Passing (${pct}%)`;
+    badge.innerText = `${ts.passed} of ${ts.total} Passing (${pct}%)`;
     badge.className = `status-badge ${ts.passed === ts.total && ts.total > 0 ? "status-ready" : "status-warning"}`;
+  }
+
+  // Update small squares matrix
+  const matrix = document.getElementById("testSquaresGrid");
+  if (matrix) {
+    const total = ts.total || 0;
+    const passed = ts.passed || 0;
+    const failed = ts.failed || 0;
+    const pending = Math.max(0, total - passed - failed);
+
+    let squaresHtml = "";
+    for (let i = 0; i < passed; i++) {
+      squaresHtml += `<div class="test-sq test-sq-pass" title="Test #${i + 1}: Passed"></div>`;
+    }
+    for (let i = 0; i < failed; i++) {
+      squaresHtml += `<div class="test-sq test-sq-fail" title="Test #${passed + i + 1}: Failed"></div>`;
+    }
+    for (let i = 0; i < pending; i++) {
+      squaresHtml += `<div class="test-sq test-sq-pending" title="Test #${passed + failed + i + 1}: Pending"></div>`;
+    }
+    matrix.innerHTML = squaresHtml;
   }
 
   // Label
@@ -775,7 +834,7 @@ function renderTestHistory() {
 }
 
 // --------------------------------------------------------------------------
-// Right Panel: Sources List
+// Right Panel: Sources List with Letter Avatars
 // --------------------------------------------------------------------------
 function recordSources(findings) {
   findings.forEach(f => {
@@ -815,16 +874,23 @@ function renderSourcesList() {
   }
 
   const items = Array.from(uniqueSources.values());
-  container.innerHTML = items.map(s => `
-    <div class="source-item">
-      <span class="source-domain">${escapeHtml(s.domain)}</span>
-      <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="source-link">
-        <span>${escapeHtml(s.title)}</span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
-      </a>
-      ${s.note ? `<p class="source-note">${escapeHtml(s.note)}</p>` : ""}
-    </div>
-  `).join("");
+  container.innerHTML = items.map(s => {
+    const cleanDomain = (s.domain || "docs").replace(/^(https?:\/\/)?(www\.|docs\.)?/, "");
+    const letter = (cleanDomain.charAt(0) || "D").toUpperCase();
+    return `
+      <div class="source-item">
+        <div class="source-avatar" aria-hidden="true">${escapeHtml(letter)}</div>
+        <div class="source-content">
+          <span class="source-domain">${escapeHtml(s.domain)}</span>
+          <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="source-link">
+            <span>${escapeHtml(s.title || s.domain)}</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+          </a>
+          ${s.note ? `<p class="source-note">${escapeHtml(s.note)}</p>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 // --------------------------------------------------------------------------
@@ -848,6 +914,13 @@ function resetUsageMetrics() {
   });
   const iterBadge = document.getElementById("runIterationUsageBadge");
   if (iterBadge) iterBadge.innerText = "Iter 0 of 5";
+
+  // Reset stacked horizontal bar
+  document.getElementById("barSegmentUltra")?.style.setProperty("width", "0%");
+  document.getElementById("barSegmentSuper")?.style.setProperty("width", "0%");
+  document.getElementById("barSegmentNano")?.style.setProperty("width", "0%");
+  const sideTavily = document.getElementById("usageTavilySideCount");
+  if (sideTavily) sideTavily.innerText = "0 Tavily searches";
 }
 
 function extractTelemetry(t) {
@@ -903,6 +976,27 @@ function updateUsageMetrics(tracker, iteration, maxIterations) {
   const totC = document.getElementById("usageTotalCost");
   if (totT) totT.innerText = data.totalTokens.toLocaleString();
   if (totC) totC.innerText = `$${data.totalCostUsd.toFixed(6)}`;
+
+  // Update Stacked Horizontal Bar by Tier
+  const ultraCost = (data.tiers.ultra && data.tiers.ultra.cost_usd) || 0;
+  const superCost = (data.tiers.super && data.tiers.super.cost_usd) || 0;
+  const nanoCost = (data.tiers.nano && data.tiers.nano.cost_usd) || 0;
+  const totalTierCost = ultraCost + superCost + nanoCost;
+
+  if (totalTierCost > 0) {
+    const ultraPct = (ultraCost / totalTierCost) * 100;
+    const superPct = (superCost / totalTierCost) * 100;
+    const nanoPct = (nanoCost / totalTierCost) * 100;
+    document.getElementById("barSegmentUltra")?.style.setProperty("width", `${ultraPct.toFixed(1)}%`);
+    document.getElementById("barSegmentSuper")?.style.setProperty("width", `${superPct.toFixed(1)}%`);
+    document.getElementById("barSegmentNano")?.style.setProperty("width", `${nanoPct.toFixed(1)}%`);
+  }
+
+  // Tavily search count next to bar
+  const sideTavily = document.getElementById("usageTavilySideCount");
+  if (sideTavily) {
+    sideTavily.innerText = `${data.tavilyCalls} Tavily search${data.tavilyCalls === 1 ? "" : "es"}`;
+  }
 }
 
 // --------------------------------------------------------------------------
@@ -966,7 +1060,8 @@ function showFinalResults() {
     if (headline) headline.innerText = `All ${lastTestSummary.total} tests pass after the upgrade`;
     if (subline) subline.innerText = `Automated repair loop completed in ${lastIteration || 1} iteration(s). All assertions verified in isolated sandbox.`;
     if (icon) {
-      icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+      icon.className = "result-banner-icon result-check-animated";
+      icon.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
     }
   } else if (isCapHit || (lastTestSummary && lastTestSummary.failed > 0)) {
     if (banner) banner.className = "result-summary-banner status-warning";
@@ -974,6 +1069,7 @@ function showFinalResults() {
     if (headline) headline.innerText = `Stopped after ${lastIteration || 5} iterations: ${failCount} tests still failing`;
     if (subline) subline.innerText = `Maximum iteration limit reached. Review partial diff and unresolved test assertions below.`;
     if (icon) {
+      icon.className = "result-banner-icon";
       icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
     }
   } else {
@@ -981,6 +1077,7 @@ function showFinalResults() {
     if (headline) headline.innerText = `Upgrade halted before test pass`;
     if (subline) subline.innerText = lastCompletionMessage || "The agent encountered an unrecoverable sandbox or model failure.";
     if (icon) {
+      icon.className = "result-banner-icon";
       icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
     }
   }
