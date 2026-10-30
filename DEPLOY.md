@@ -1,6 +1,7 @@
 # Deployment Guide: Upgrade Pilot
 
 > **Primary Host**: **Render** (Production-ready Docker Web Service)  
+> *Live Instance*: [https://nebius-hackathon.onrender.com](https://nebius-hackathon.onrender.com)  
 > *Alternate Supported Host*: **Fly.io**  
 > *Source Repository*: `https://github.com/ritesh-1912/Nebius-Hackathon`  
 > *License*: MIT

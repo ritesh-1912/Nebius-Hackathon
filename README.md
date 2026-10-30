@@ -14,6 +14,7 @@
 ---
 
 ### Quick Links
+- 🌐 **Live Deployed Application**: [`https://nebius-hackathon.onrender.com`](https://nebius-hackathon.onrender.com)
 - 📂 **GitHub Repository**: [`https://github.com/ritesh-1912/Nebius-Hackathon`](https://github.com/ritesh-1912/Nebius-Hackathon)
 - 📝 **Devpost Submission Form**: [`DEVPOST.md`](DEVPOST.md)
 - 🚀 **Production Deployment Guide**: [`DEPLOY.md`](DEPLOY.md) (Render 1-Click & Fly.io)

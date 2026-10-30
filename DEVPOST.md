@@ -2,6 +2,7 @@
 
 **Track:** Coding and Agentic Engineering Track  
 **Submission Repository:** [https://github.com/ritesh-1912/Nebius-Hackathon](https://github.com/ritesh-1912/Nebius-Hackathon)  
+**Live Application URL:** [https://nebius-hackathon.onrender.com](https://nebius-hackathon.onrender.com)  
 **Built With:** Python, FastAPI, Nebius Token Factory, NVIDIA Nemotron (Ultra 550B, Super 120B, Nano 30B), Tavily Search API, Pytest, Docker, Server-Sent Events (SSE), HTML5 / CSS3  
 
 ---
@@ -111,6 +112,7 @@ During the submission and review period, we executed a rigorous feature freeze a
 ---
 
 ## Try It Out
+- **Live Deployed App**: [https://nebius-hackathon.onrender.com](https://nebius-hackathon.onrender.com)
 - **GitHub Repository**: [https://github.com/ritesh-1912/Nebius-Hackathon](https://github.com/ritesh-1912/Nebius-Hackathon)
 - **Local Run**: `git clone https://github.com/ritesh-1912/Nebius-Hackathon.git && cd Nebius-Hackathon && pip install -r requirements.txt && uvicorn upgrade_pilot.main:app`
 - **Docker**: `docker run --rm -it -p 8000:8000 --env-file .env upgrade-pilot`
