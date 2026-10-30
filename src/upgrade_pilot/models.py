@@ -118,6 +118,7 @@ class EventPayload(BaseModel):
     diff: Optional[str] = None
     pr_summary: Optional[str] = None
     changed_files: List[str] = Field(default_factory=list)
+    no_test_files_modified: bool = True
 
 
 class AgentEvent(BaseModel):

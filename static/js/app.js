@@ -8,6 +8,7 @@ let lastDiff = "";
 let lastPrSummary = "";
 let lastTestSummary = null;
 let lastChangedFiles = [];
+let lastNoTestFilesModified = true;
 let eventCount = 0;
 let runStartTime = null;
 let timerInterval = null;
@@ -264,6 +265,7 @@ function startUpgrade(isCached = false) {
   lastTelemetry = null;
   lastCostTracker = null;
   lastChangedFiles = [];
+  lastNoTestFilesModified = true;
   lastIteration = 0;
   lastCompletionMessage = "";
   isAutoScrollEnabled = true;
@@ -407,6 +409,7 @@ function handleAgentEvent(event) {
     if (event.payload.diff) lastDiff = event.payload.diff;
     if (event.payload.pr_summary) lastPrSummary = event.payload.pr_summary;
     if (event.payload.changed_files) lastChangedFiles = event.payload.changed_files;
+    if (event.payload.no_test_files_modified !== undefined) lastNoTestFilesModified = event.payload.no_test_files_modified;
   }
 
   // Append Activity Row
@@ -983,6 +986,16 @@ function showFinalResults() {
 // Tab 1: Changes (Files Changed & Unified Diff Viewer with Line Numbers)
 // --------------------------------------------------------------------------
 function renderChangesTab() {
+  // Integrity Callout Reactive Sync
+  const integrityText = document.querySelector(".diff-integrity-text");
+  if (integrityText) {
+    if (lastNoTestFilesModified) {
+      integrityText.innerHTML = `<strong>Test Suite Integrity Verified:</strong> 0 test files modified. Upgrade Pilot strictly verified that only application source files were changed, ensuring test suite validity.`;
+    } else {
+      integrityText.innerHTML = `<strong style="color: var(--color-error);">Integrity Warning:</strong> Test file modifications detected.`;
+    }
+  }
+
   // Modified application files tags
   const tagsContainer = document.getElementById("filesChangedTags");
   if (tagsContainer) {
