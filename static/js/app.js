@@ -1,28 +1,75 @@
-/**
- * Upgrade Pilot — Client Application & Real-Time SSE Consumer
- */
+// Upgrade Pilot Frontend Client - Design System & SSE Event Stream Handler
+// Following DESIGN.md: Clean Developer-Tool Aesthetic, No Emoji, Strict Status Colors
 
-let selectedDemo = "demo_pydantic";
 let eventSource = null;
-let eventCount = 0;
+let selectedDemo = "demo_pydantic";
 let lastDiff = "";
 let lastPrSummary = "";
 let lastTestSummary = null;
 let lastChangedFiles = [];
+let eventCount = 0;
 
-// Initialize
+// Initialize on DOM ready
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   fetchPricing();
   fetchDemos();
+  initDemoSelection();
+
+  // Check autoplay parameter
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get("autoplay") === "cached") {
-    setTimeout(() => {
-      startUpgrade(true);
-    }, 300);
+    startUpgrade(true);
+  } else if (urlParams.get("autoplay") === "live") {
+    startUpgrade(false);
   }
 });
 
-// Fetch backend pricing reference
+// --------------------------------------------------------------------------
+// Theme Management (Light / Dark)
+// --------------------------------------------------------------------------
+function initTheme() {
+  const saved = localStorage.getItem("theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isDark = saved ? saved === "dark" : prefersDark;
+
+  applyTheme(isDark);
+}
+
+function applyTheme(isDark) {
+  if (isDark) {
+    document.documentElement.classList.add("dark");
+    document.documentElement.setAttribute("data-theme", "dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+  updateThemeIcons(isDark);
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle("dark");
+  document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+  localStorage.setItem("theme", isDark ? "dark" : "light");
+  updateThemeIcons(isDark);
+}
+
+function updateThemeIcons(isDark) {
+  const sun = document.getElementById("themeIconSun");
+  const moon = document.getElementById("themeIconMoon");
+  if (!sun || !moon) return;
+  if (isDark) {
+    sun.classList.remove("hidden");
+    moon.classList.add("hidden");
+  } else {
+    sun.classList.add("hidden");
+    moon.classList.remove("hidden");
+  }
+}
+
+// --------------------------------------------------------------------------
+// Pricing & Demos Metadata
+// --------------------------------------------------------------------------
 async function fetchPricing() {
   try {
     const res = await fetch("/api/pricing");
@@ -33,7 +80,6 @@ async function fetchPricing() {
   }
 }
 
-// Fetch demos metadata
 async function fetchDemos() {
   try {
     const res = await fetch("/api/demos");
@@ -44,7 +90,13 @@ async function fetchDemos() {
   }
 }
 
-// Demo Selection Handler
+// --------------------------------------------------------------------------
+// Demo Selection
+// --------------------------------------------------------------------------
+function initDemoSelection() {
+  selectDemo("demo_pydantic");
+}
+
 function selectDemo(demoId) {
   if (eventSource) return; // Prevent switching while running
   selectedDemo = demoId;
@@ -54,24 +106,25 @@ function selectDemo(demoId) {
   const checkPyd = document.getElementById("check-demo_pydantic");
   const checkSql = document.getElementById("check-demo_sqlalchemy");
 
+  if (!cardPyd || !cardSql) return;
+
   if (demoId === "demo_pydantic") {
-    cardPyd.className = "cursor-pointer glass-panel-glow border-2 border-nvidia p-5 rounded-xl transition duration-200 hover:scale-[1.01] relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-emerald-950/20 focus-ring";
+    cardPyd.classList.add("selected");
     cardPyd.setAttribute("aria-checked", "true");
-    cardSql.className = "cursor-pointer glass-panel border border-white/10 p-5 rounded-xl transition duration-200 hover:scale-[1.01] hover:border-white/30 relative overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950 focus-ring";
+    cardSql.classList.remove("selected");
     cardSql.setAttribute("aria-checked", "false");
-    checkPyd.classList.remove("hidden");
-    checkSql.classList.add("hidden");
+    if (checkPyd) checkPyd.classList.remove("hidden");
+    if (checkSql) checkSql.classList.add("hidden");
   } else {
-    cardSql.className = "cursor-pointer glass-panel-glow border-2 border-blue-400 p-5 rounded-xl transition duration-200 hover:scale-[1.01] relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-blue-950/20 focus-ring";
+    cardSql.classList.add("selected");
     cardSql.setAttribute("aria-checked", "true");
-    cardPyd.className = "cursor-pointer glass-panel border border-white/10 p-5 rounded-xl transition duration-200 hover:scale-[1.01] hover:border-white/30 relative overflow-hidden bg-gradient-to-br from-slate-900/80 to-slate-950 focus-ring";
+    cardPyd.classList.remove("selected");
     cardPyd.setAttribute("aria-checked", "false");
-    checkSql.classList.remove("hidden");
-    checkPyd.classList.add("hidden");
+    if (checkSql) checkSql.classList.remove("hidden");
+    if (checkPyd) checkPyd.classList.add("hidden");
   }
 }
 
-// Keyboard navigation for demo cards
 function handleDemoKey(event, demoId) {
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
@@ -79,37 +132,46 @@ function handleDemoKey(event, demoId) {
   }
 }
 
-// Start Upgrade Pipeline
+// --------------------------------------------------------------------------
+// Upgrade Pipeline Execution
+// --------------------------------------------------------------------------
 function startUpgrade(isCached = false) {
   if (eventSource) return;
 
-  // UI state transition
-  document.getElementById("emptyState").classList.add("hidden");
-  document.getElementById("progressSection").classList.remove("hidden");
-  document.getElementById("resetBtn").classList.remove("hidden");
-  document.getElementById("livePulse").classList.remove("hidden");
-  document.getElementById("finalResultsSection").classList.add("hidden");
+  // Reveal workspace
+  const workspace = document.getElementById("workspaceSection");
+  if (workspace) workspace.classList.remove("hidden");
+
+  document.getElementById("emptyState")?.classList.add("hidden");
+  document.getElementById("progressSection")?.classList.remove("hidden");
+  document.getElementById("resetBtn")?.classList.remove("hidden");
+  document.getElementById("livePulse")?.classList.remove("hidden");
+  document.getElementById("finalResultsSection")?.classList.add("hidden");
 
   const runBtn = document.getElementById("runBtn");
   const runBtnText = document.getElementById("runBtnText");
   const runBtnIcon = document.getElementById("runBtnIcon");
   const cachedRunBtn = document.getElementById("cachedRunBtn");
 
-  runBtn.disabled = true;
-  runBtn.classList.add("opacity-75", "cursor-not-allowed");
+  if (runBtn) {
+    runBtn.disabled = true;
+    runBtn.classList.add("opacity-50", "cursor-not-allowed");
+  }
   if (cachedRunBtn) {
     cachedRunBtn.disabled = true;
     cachedRunBtn.classList.add("opacity-50", "cursor-not-allowed");
   }
 
   if (isCached) {
-    runBtnText.innerText = "Replaying Cached Run...";
-    updateStatus("Replaying Cached", "running");
+    if (runBtnText) runBtnText.innerText = "Replaying Recorded Run...";
+    updateStatus("Replaying Recorded", "running");
     const banner = document.getElementById("cachedRunBanner");
     if (banner) banner.classList.remove("hidden");
   } else {
-    runBtnIcon.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
-    runBtnText.innerText = "Agent Upgrading...";
+    if (runBtnIcon) {
+      runBtnIcon.innerHTML = `<svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="0.75"/></svg>`;
+    }
+    if (runBtnText) runBtnText.innerText = "Upgrading...";
     updateStatus("Agent Running", "running");
     const banner = document.getElementById("cachedRunBanner");
     if (banner) banner.classList.add("hidden");
@@ -117,8 +179,15 @@ function startUpgrade(isCached = false) {
 
   // Reset counters
   eventCount = 0;
-  document.getElementById("eventCountLabel").innerText = "0 events";
-  document.getElementById("timelineFeed").innerHTML = "";
+  const countLabel = document.getElementById("eventCountLabel");
+  if (countLabel) countLabel.innerText = "0 events";
+  const timeline = document.getElementById("timelineFeed");
+  if (timeline) timeline.innerHTML = "";
+
+  // Smooth scroll down to workspace
+  if (workspace) {
+    workspace.scrollIntoView({ behavior: "smooth" });
+  }
 
   // Connect to SSE stream
   const streamUrl = `/api/upgrade/stream?demo=${encodeURIComponent(selectedDemo)}${isCached ? "&cached=true" : ""}`;
@@ -142,7 +211,8 @@ function startUpgrade(isCached = false) {
 // Process individual typed event
 function handleAgentEvent(event) {
   eventCount++;
-  document.getElementById("eventCountLabel").innerText = `${eventCount} events`;
+  const countLabel = document.getElementById("eventCountLabel");
+  if (countLabel) countLabel.innerText = `${eventCount} events`;
 
   // Detect cached run
   if (event.run_id && event.run_id.includes("cached")) {
@@ -150,35 +220,31 @@ function handleAgentEvent(event) {
     if (banner) banner.classList.remove("hidden");
   }
 
-  // Update Status in Navbar
+  // Update Status
   if (event.status === "running") {
     updateStatus(`Running: ${event.step}${event.iteration > 0 ? ` (Iter ${event.iteration})` : ""}`, "running");
   }
 
   // Update Telemetry Panel
-  if (event.telemetry && event.telemetry.cumulative) {
-    updateTelemetry(event.telemetry.cumulative);
+  if (event.cost_tracker) {
+    updateTelemetry(event.cost_tracker);
   }
 
-  // Update Test Progress Bar
+  // Update Verification Progress Bar
   if (event.payload && event.payload.test_summary) {
-    lastTestSummary = event.payload.test_summary;
     updateTestProgress(event.payload.test_summary, event.iteration);
+    lastTestSummary = event.payload.test_summary;
   }
 
-  // Render Timeline Card
+  // Cache artifacts
+  if (event.payload) {
+    if (event.payload.diff) lastDiff = event.payload.diff;
+    if (event.payload.pr_summary) lastPrSummary = event.payload.pr_summary;
+    if (event.payload.changed_files) lastChangedFiles = event.payload.changed_files;
+  }
+
+  // Append Timeline Item
   renderTimelineCard(event);
-
-  // Check if completed or final diff available
-  if (event.payload && event.payload.diff) {
-    lastDiff = event.payload.diff;
-  }
-  if (event.payload && event.payload.pr_summary) {
-    lastPrSummary = event.payload.pr_summary;
-  }
-  if (event.payload && event.payload.changed_files) {
-    lastChangedFiles = event.payload.changed_files;
-  }
 
   if (event.step === "COMPLETED") {
     const isSuccess = event.status === "success";
@@ -189,117 +255,125 @@ function handleAgentEvent(event) {
 }
 
 // Telemetry Panel Update
-function updateTelemetry(cum) {
-  if (!cum) return;
-  document.getElementById("telemetryTotalCost").innerText = `$${cum.total_cost_usd.toFixed(6)}`;
-  document.getElementById("telemetryTotalTokens").innerText = cum.total_tokens.toLocaleString();
+function updateTelemetry(tracker) {
+  const cum = tracker.cumulative;
+  const tiers = tracker.tier_usage;
 
-  const tiers = cum.tiers || {};
+  const totalCost = document.getElementById("telemetryTotalCost");
+  const totalTokens = document.getElementById("telemetryTotalTokens");
+  if (totalCost) totalCost.innerText = `$${cum.total_cost_usd.toFixed(6)}`;
+  if (totalTokens) totalTokens.innerText = cum.total_tokens.toLocaleString();
+
   if (tiers.ultra) {
-    document.getElementById("costUltra").innerText = `$${tiers.ultra.cost_usd.toFixed(6)}`;
-    document.getElementById("tokensUltra").innerText = tiers.ultra.total_tokens.toLocaleString();
+    const c = document.getElementById("costUltra");
+    const t = document.getElementById("tokensUltra");
+    if (c) c.innerText = `$${tiers.ultra.cost_usd.toFixed(6)}`;
+    if (t) t.innerText = tiers.ultra.total_tokens.toLocaleString();
   }
   if (tiers.super) {
-    document.getElementById("costSuper").innerText = `$${tiers.super.cost_usd.toFixed(6)}`;
-    document.getElementById("tokensSuper").innerText = tiers.super.total_tokens.toLocaleString();
-    document.getElementById("reasoningSuper").innerText = tiers.super.reasoning_tokens.toLocaleString();
+    const c = document.getElementById("costSuper");
+    const t = document.getElementById("tokensSuper");
+    const r = document.getElementById("reasoningSuper");
+    if (c) c.innerText = `$${tiers.super.cost_usd.toFixed(6)}`;
+    if (t) t.innerText = tiers.super.total_tokens.toLocaleString();
+    if (r) r.innerText = tiers.super.reasoning_tokens.toLocaleString();
   }
   if (tiers.nano) {
-    document.getElementById("costNano").innerText = `$${tiers.nano.cost_usd.toFixed(6)}`;
-    document.getElementById("tokensNano").innerText = tiers.nano.total_tokens.toLocaleString();
+    const c = document.getElementById("costNano");
+    const t = document.getElementById("tokensNano");
+    if (c) c.innerText = `$${tiers.nano.cost_usd.toFixed(6)}`;
+    if (t) t.innerText = tiers.nano.total_tokens.toLocaleString();
   }
 
-  if (cum.tavily_calls !== undefined) {
+  if (tracker.tavily_usage) {
     const el = document.getElementById("tavilyCallsCount");
-    if (el) el.innerText = cum.tavily_calls;
+    if (el) el.innerText = tracker.tavily_usage.api_calls;
     const qEl = document.getElementById("tavilyQueriesCount");
-    if (qEl) qEl.innerText = cum.tavily_calls;
+    if (qEl) qEl.innerText = tracker.tavily_usage.queries_executed;
   }
 }
 
-// Update Test Progress Bar
-function updateTestProgress(ts, iteration) {
-  const total = ts.total || 0;
-  const passed = ts.passed || 0;
+// Test Progress Bar Update
+function updateTestProgress(testSummary, iteration = 0) {
+  const passed = testSummary.passed;
+  const total = testSummary.total;
   const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
 
-  document.getElementById("iterationBadge").innerText = iteration > 0 ? `Iteration ${iteration}` : "Baseline";
-  document.getElementById("testRatioLabel").innerText = `${passed} / ${total} Tests Passing (${pct}%)`;
-
-  const bar = document.getElementById("testProgressBar");
-  bar.style.width = `${pct}%`;
-
-  const container = document.getElementById("testProgressContainer");
-  if (container) {
-    container.setAttribute("aria-valuenow", pct.toString());
+  const iterBadge = document.getElementById("iterationBadge");
+  if (iterBadge) {
+    iterBadge.innerText = iteration > 0 ? `Iteration ${iteration}` : "Baseline";
   }
 
-  if (pct === 100) {
-    bar.className = "h-full bg-nvidia rounded-full transition-all duration-500 shadow-md shadow-nvidia/50";
-  } else if (pct > 50) {
-    bar.className = "h-full bg-gradient-to-r from-amber-500 to-nvidia rounded-full transition-all duration-500";
-  } else {
-    bar.className = "h-full bg-gradient-to-r from-red-500 to-amber-500 rounded-full transition-all duration-500";
+  const ratioLabel = document.getElementById("testRatioLabel");
+  if (ratioLabel) {
+    ratioLabel.innerText = `${passed} / ${total} Tests Passing (${pct}%)`;
+  }
+
+  const bar = document.getElementById("testProgressBar");
+  if (bar) {
+    bar.style.width = `${pct}%`;
+    if (pct === 100) {
+      bar.classList.add("full");
+    } else {
+      bar.classList.remove("full");
+    }
   }
 }
 
-// Render dynamic timeline card for event
+// Render dynamic timeline card for event (No Emoji, Lucide SVG icons)
 function renderTimelineCard(event) {
   const container = document.getElementById("timelineFeed");
-  const card = document.createElement("div");
-  card.className = "glass-panel p-5 space-y-3 transition transform duration-300 border-l-4";
+  if (!container) return;
 
-  // Border accent based on step and status
-  let borderColor = "border-l-gray-600";
-  let stepIcon = "⚡";
+  const card = document.createElement("div");
+  card.className = "timeline-card";
+
+  // Semantic border accent
+  if (event.status === "error") {
+    card.style.borderLeft = "3px solid var(--error-base)";
+  } else if (event.status === "success" || event.step === "COMPLETED") {
+    card.style.borderLeft = "3px solid var(--success-base)";
+  } else if (event.status === "running") {
+    card.style.borderLeft = "3px solid var(--accent-base)";
+  }
+
+  let stepIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
   let tierBadge = "";
 
   if (event.step === "INIT") {
-    borderColor = "border-l-blue-400";
-    stepIcon = "📦";
+    stepIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
   } else if (event.step === "BASELINE_TEST") {
-    borderColor = event.status === "success" ? "border-l-nvidia" : "border-l-red-500";
-    stepIcon = "🧪";
+    stepIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>`;
   } else if (event.step === "PLANNING") {
-    borderColor = "border-l-purple-400";
-    stepIcon = "🧠";
-    tierBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 font-mono">Nemotron 3 Ultra</span>`;
+    stepIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/></svg>`;
+    tierBadge = `<span class="timeline-tier-tag">Nemotron 3 Ultra</span>`;
   } else if (event.step === "RESEARCH") {
-    borderColor = "border-l-sky-400";
-    stepIcon = "🌐";
-    tierBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-sky-500/20 text-sky-300 font-mono">Tavily + Nemotron 3 Nano</span>`;
+    stepIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`;
+    tierBadge = `<span class="timeline-tier-tag">Tavily + Nemotron 3 Nano</span>`;
   } else if (event.step === "PATCHING") {
-    borderColor = event.status === "error" ? "border-l-red-400" : "border-l-nvidia";
-    stepIcon = "🛠️";
-    tierBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-nvidia/20 text-nvidia font-mono">Nemotron 3 Super</span>`;
+    stepIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`;
+    tierBadge = `<span class="timeline-tier-tag">Nemotron 3 Super</span>`;
   } else if (event.step === "VERIFYING") {
-    borderColor = event.status === "success" ? "border-l-nvidia" : "border-l-amber-500";
-    stepIcon = "🔬";
+    stepIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
   } else if (event.step === "REVIEW" || event.step === "COMPLETED") {
-    borderColor = event.status === "success" ? "border-l-nvidia" : "border-l-amber-400";
-    stepIcon = "🏁";
-    tierBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 font-mono">Nemotron 3 Ultra</span>`;
-  }
-
-  card.classList.add(borderColor);
-  if (event.status === "running") {
-    card.classList.add("active-running-card");
+    stepIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>`;
+    tierBadge = `<span class="timeline-tier-tag">Nemotron 3 Ultra</span>`;
   }
 
   const headerHtml = `
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <span class="text-base">${stepIcon}</span>
-        <span class="font-bold text-sm text-white">${event.step}${event.iteration > 0 ? ` (Iter ${event.iteration})` : ""}</span>
+    <div class="timeline-card-header">
+      <div class="timeline-step">
+        <span>${stepIcon}</span>
+        <span>${event.step}${event.iteration > 0 ? ` (Iter ${event.iteration})` : ""}</span>
         ${tierBadge}
       </div>
-      <span class="text-[11px] font-mono text-gray-400">${new Date(event.timestamp).toLocaleTimeString()}</span>
+      <span class="timeline-timestamp">${new Date(event.timestamp).toLocaleTimeString()}</span>
     </div>
   `;
 
   // Status message
-  const statusColor = event.status === "error" ? "text-rose-400" : (event.status === "success" ? "text-emerald-400" : "text-gray-200");
-  const messageHtml = `<p class="text-xs sm:text-sm ${statusColor} leading-relaxed">${escapeHtml(event.message)}</p>`;
+  const statusColor = event.status === "error" ? "color: var(--error-fg)" : (event.status === "success" ? "color: var(--success-fg)" : "color: var(--text-primary)");
+  const messageHtml = `<p class="timeline-message" style="${statusColor}">${escapeHtml(event.message)}</p>`;
 
   let payloadHtml = "";
 
@@ -308,21 +382,21 @@ function renderTimelineCard(event) {
     const ts = event.payload.test_summary;
     const testPct = ts.total > 0 ? Math.round((ts.passed / ts.total) * 100) : 0;
     payloadHtml += `
-      <div class="p-3 rounded-lg bg-slate-950/70 border border-white/5 space-y-1.5 text-xs font-mono">
-        <div class="flex items-center justify-between">
-          <span class="text-gray-300 font-semibold">Pytest Results:</span>
-          <span class="${ts.passed === ts.total && ts.total > 0 ? 'text-nvidia' : 'text-amber-400'} font-bold">
+      <div style="padding: 10px 12px; background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: 6px; font-size: 12px; font-family: var(--font-mono); margin-top: 6px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span style="font-weight: 500; color: var(--text-primary);">Pytest Results:</span>
+          <span style="color: ${ts.passed === ts.total && ts.total > 0 ? 'var(--success-fg)' : 'var(--warning-fg)'}; font-weight: 600;">
             ${ts.passed} passed, ${ts.failed} failed (${testPct}%)
           </span>
         </div>
         ${ts.failed_test_names && ts.failed_test_names.length > 0 ? `
-          <div class="text-[11px] text-rose-300 space-y-0.5 mt-1">
-            ${ts.failed_test_names.slice(0, 4).map(t => `<div>• ❌ ${escapeHtml(t)}</div>`).join("")}
+          <div style="color: var(--error-fg); font-size: 11px; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+            ${ts.failed_test_names.slice(0, 4).map(t => `<div>• ${escapeHtml(t)}</div>`).join("")}
             ${ts.failed_test_names.length > 4 ? `<div>... and ${ts.failed_test_names.length - 4} more</div>` : ""}
           </div>
         ` : ""}
         ${ts.output_tail ? `
-          <pre class="p-2 rounded bg-black/50 text-[11px] text-gray-400 overflow-x-auto max-h-32 mt-1 whitespace-pre-wrap">${escapeHtml(ts.output_tail)}</pre>
+          <pre style="padding: 6px 8px; background: var(--bg-app); border: 1px solid var(--border-default); border-radius: 4px; font-size: 11px; color: var(--text-secondary); overflow-x: auto; max-height: 120px; margin-top: 6px; white-space: pre-wrap;">${escapeHtml(ts.output_tail)}</pre>
         ` : ""}
       </div>
     `;
@@ -331,32 +405,31 @@ function renderTimelineCard(event) {
   // Payload: Migration Plan preview
   if (event.payload && event.payload.plan_markdown) {
     payloadHtml += `
-      <div class="p-4 rounded-lg bg-slate-950/80 border border-white/10 markdown-body text-xs max-h-64 overflow-y-auto">
+      <div style="padding: 12px; background: var(--bg-app); border: 1px solid var(--border-default); border-radius: 6px; font-size: 12px; max-height: 200px; overflow-y: auto; margin-top: 6px;" class="markdown-body">
         ${marked.parse(event.payload.plan_markdown)}
       </div>
     `;
   }
 
-  // Payload: Research findings with Tavily source links
+  // Payload: Research findings
   if (event.payload && event.payload.research_findings && event.payload.research_findings.length > 0) {
     payloadHtml += `
-      <div class="space-y-2 mt-2">
-        <div class="text-[11px] font-bold uppercase tracking-wider text-sky-400 flex items-center justify-between">
-          <span>Tavily Live Grounding & Nano Synthesized Rules</span>
-          <span class="text-gray-400 font-mono text-[10px]">${event.payload.research_findings.length} rules</span>
+      <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); display: flex; justify-content: space-between;">
+          <span>Official Migration Rules (Tavily & Nano)</span>
+          <span style="font-family: var(--font-mono);">${event.payload.research_findings.length} sources</span>
         </div>
-        <div class="space-y-1.5">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
           ${event.payload.research_findings.map(rf => `
-            <div class="p-2.5 rounded-lg bg-slate-950/70 border border-sky-500/20 text-xs space-y-1">
-              <div class="text-sky-300 font-semibold text-[11px] flex items-center space-x-1">
-                <span>🔎</span>
-                <span>${escapeHtml(rf.query || "Documentation Query")}</span>
+            <div style="padding: 8px 10px; background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: 6px; font-size: 12px;">
+              <div style="font-weight: 500; color: var(--text-primary); font-size: 11px; margin-bottom: 2px;">
+                ${escapeHtml(rf.query || "Documentation Query")}
               </div>
-              <p class="text-gray-200 text-[11px] leading-relaxed">${escapeHtml(rf.summary || rf.rule)}</p>
+              <p style="color: var(--text-secondary); font-size: 12px; line-height: 1.4;">${escapeHtml(rf.summary || rf.rule)}</p>
               ${rf.source_url ? `
-                <a href="${escapeHtml(rf.source_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1 text-[11px] text-sky-400 hover:text-sky-300 hover:underline">
-                  <span>🔗</span>
+                <a href="${escapeHtml(rf.source_url)}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--accent-fg); text-decoration: none; margin-top: 4px;">
                   <span>${escapeHtml(rf.source_title || rf.source_url)}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
                 </a>
               ` : ""}
             </div>
@@ -366,26 +439,10 @@ function renderTimelineCard(event) {
     `;
   }
 
-  // Payload: Structured Edits
-  if (event.payload && event.payload.structured_edits && event.payload.structured_edits.length > 0) {
-    payloadHtml += `
-      <div class="space-y-1 text-xs">
-        <div class="text-[11px] font-semibold text-gray-300">Targeted Code Modifications:</div>
-        <div class="flex flex-wrap gap-1.5">
-          ${event.payload.structured_edits.map(se => `
-            <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[11px] text-gray-300">
-              ${escapeHtml(se.file)} (${escapeHtml(se.explanation || "AST edit")})
-            </span>
-          `).join("")}
-        </div>
-      </div>
-    `;
-  }
-
   // Payload: Unified Diff preview
   if (event.payload && event.payload.diff) {
     payloadHtml += `
-      <div class="diff-container p-3 max-h-48 overflow-y-auto">
+      <div class="diff-container" style="padding: 10px; max-height: 160px; margin-top: 6px;">
         ${formatDiffHtml(event.payload.diff)}
       </div>
     `;
@@ -398,24 +455,27 @@ function renderTimelineCard(event) {
 // Show Final Screen
 function showFinalResults() {
   const section = document.getElementById("finalResultsSection");
+  if (!section) return;
   section.classList.remove("hidden");
 
   // Render Diff
   const diffContainer = document.getElementById("finalDiffContainer");
   if (lastDiff) {
     diffContainer.innerHTML = formatDiffHtml(lastDiff);
-    document.getElementById("finalDiffText").value = lastDiff;
+    const hiddenText = document.getElementById("finalDiffText");
+    if (hiddenText) hiddenText.value = lastDiff;
   } else {
-    diffContainer.innerHTML = `<span class="text-gray-400">No diff generated.</span>`;
+    diffContainer.innerHTML = `<span style="color: var(--text-tertiary); padding: 12px; display: block;">No diff generated.</span>`;
   }
 
   // Render PR Summary
   const prContainer = document.getElementById("prSummaryContainer");
   if (lastPrSummary) {
     prContainer.innerHTML = marked.parse(lastPrSummary);
-    document.getElementById("prSummaryMarkdown").value = lastPrSummary;
+    const hiddenPr = document.getElementById("prSummaryMarkdown");
+    if (hiddenPr) hiddenPr.value = lastPrSummary;
   } else {
-    prContainer.innerHTML = `<span class="text-gray-400">No PR summary generated.</span>`;
+    prContainer.innerHTML = `<span style="color: var(--text-tertiary); padding: 12px; display: block;">No PR summary generated.</span>`;
   }
 
   // Update Test Badge
@@ -423,11 +483,7 @@ function showFinalResults() {
   if (badge && lastTestSummary) {
     const isFullPass = lastTestSummary.passed === lastTestSummary.total && lastTestSummary.total > 0;
     badge.innerText = `${lastTestSummary.passed}/${lastTestSummary.total} Tests Passing`;
-    if (isFullPass) {
-      badge.className = "text-xs px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
-    } else {
-      badge.className = "text-xs px-2 py-0.5 rounded font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30";
-    }
+    badge.className = `status-badge ${isFullPass ? "status-ready" : "status-warning"}`;
   }
 
   // Render Changed Files
@@ -435,8 +491,8 @@ function showFinalResults() {
   if (filesList) {
     if (lastChangedFiles && lastChangedFiles.length > 0) {
       filesList.classList.remove("hidden");
-      filesList.innerHTML = `<span class="text-[11px] text-gray-400 font-medium mr-1">Modified Files:</span>` +
-        lastChangedFiles.map(f => `<span class="text-[11px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono border border-blue-500/30">📄 ${f}</span>`).join(" ");
+      filesList.innerHTML = `<span style="font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-right: 6px;">Modified Files:</span>` +
+        lastChangedFiles.map(f => `<span class="version-pill">${escapeHtml(f)}</span>`).join(" ");
     } else {
       filesList.classList.add("hidden");
     }
@@ -452,51 +508,37 @@ function switchResultTab(tabName) {
   const prBtn = document.getElementById("tabPrSummaryBtn");
   const diffBtn = document.getElementById("tabDiffBtn");
 
+  if (!prContent || !diffContent || !prBtn || !diffBtn) return;
+
   if (tabName === "pr") {
     prContent.classList.remove("hidden");
     diffContent.classList.add("hidden");
-    prBtn.className = "tab-btn active px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium flex items-center space-x-1.5 focus-ring";
-    diffBtn.className = "tab-btn px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium text-gray-400 hover:text-white flex items-center space-x-1.5 focus-ring";
+    prBtn.classList.add("active");
+    diffBtn.classList.remove("active");
   } else {
     diffContent.classList.remove("hidden");
     prContent.classList.add("hidden");
-    diffBtn.className = "tab-btn active px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium flex items-center space-x-1.5 focus-ring";
-    prBtn.className = "tab-btn px-3.5 py-1.5 rounded-lg text-xs border border-transparent font-medium text-gray-400 hover:text-white flex items-center space-x-1.5 focus-ring";
+    diffBtn.classList.add("active");
+    prBtn.classList.remove("active");
   }
 }
 
-// Download patch as a .diff file
-function downloadPatchFile() {
-  if (!lastDiff) {
-    showToast("No diff available to download");
-    return;
-  }
-  const blob = new Blob([lastDiff], { type: "text/x-diff;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${selectedDemo}_upgrade_patch.diff`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast("Downloaded patch file!");
-}
-
-// Format Diff HTML
+// Format Unified Diff HTML with clean GitHub-like lines
 function formatDiffHtml(diffText) {
   if (!diffText) return "";
   const lines = diffText.split("\n");
   return lines.map(line => {
     const escaped = escapeHtml(line);
-    if (line.startsWith("+") && !line.startsWith("+++")) {
-      return `<span class="diff-line-add">${escaped}</span>`;
-    } else if (line.startsWith("-") && !line.startsWith("---")) {
-      return `<span class="diff-line-del">${escaped}</span>`;
+    if (line.startsWith("+++") || line.startsWith("---")) {
+      return `<div class="diff-line-header">${escaped}</div>`;
+    } else if (line.startsWith("+")) {
+      return `<div class="diff-line-add">${escaped}</div>`;
+    } else if (line.startsWith("-")) {
+      return `<div class="diff-line-del">${escaped}</div>`;
     } else if (line.startsWith("@@")) {
-      return `<span class="diff-line-info">${escaped}</span>`;
+      return `<div class="diff-line-info">${escaped}</div>`;
     } else {
-      return `<span class="diff-line-context">${escaped}</span>`;
+      return `<div class="diff-line-context">${escaped}</div>`;
     }
   }).join("");
 }
@@ -513,16 +555,22 @@ function finishRun(success, message, isCapHit = false) {
   const runBtnIcon = document.getElementById("runBtnIcon");
   const cachedRunBtn = document.getElementById("cachedRunBtn");
 
-  runBtn.disabled = false;
-  runBtn.classList.remove("opacity-75", "cursor-not-allowed");
+  if (runBtn) {
+    runBtn.disabled = false;
+    runBtn.classList.remove("opacity-50", "cursor-not-allowed");
+  }
   if (cachedRunBtn) {
     cachedRunBtn.disabled = false;
     cachedRunBtn.classList.remove("opacity-50", "cursor-not-allowed");
   }
-  runBtnIcon.innerText = "🚀";
-  runBtnText.innerText = "Run Upgrade Pilot";
+  if (runBtnIcon) {
+    runBtnIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+  }
+  if (runBtnText) {
+    runBtnText.innerText = "Run this upgrade";
+  }
 
-  document.getElementById("livePulse").classList.add("hidden");
+  document.getElementById("livePulse")?.classList.add("hidden");
 
   if (isCapHit) {
     updateStatus("Limit Cap Enforced", "warning");
@@ -543,15 +591,10 @@ function finishRun(success, message, isCapHit = false) {
 function updateStatus(text, state) {
   const badge = document.getElementById("statusBadge");
   const textEl = document.getElementById("statusText");
+  if (!badge || !textEl) return;
   textEl.innerText = text;
 
-  if (state === "running") {
-    badge.className = "flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-nvidia/10 text-nvidia border border-nvidia/30";
-  } else if (state === "ready") {
-    badge.className = "flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-  } else {
-    badge.className = "flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20";
-  }
+  badge.className = `status-badge status-${state}`;
 }
 
 // Reset State
@@ -560,83 +603,109 @@ function resetState() {
     eventSource.close();
     eventSource = null;
   }
-  document.getElementById("timelineFeed").innerHTML = "";
-  document.getElementById("emptyState").classList.remove("hidden");
-  document.getElementById("progressSection").classList.add("hidden");
-  document.getElementById("finalResultsSection").classList.add("hidden");
-  document.getElementById("resetBtn").classList.add("hidden");
-  document.getElementById("livePulse").classList.add("hidden");
+  const timeline = document.getElementById("timelineFeed");
+  if (timeline) timeline.innerHTML = "";
+
+  document.getElementById("emptyState")?.classList.remove("hidden");
+  document.getElementById("progressSection")?.classList.add("hidden");
+  document.getElementById("finalResultsSection")?.classList.add("hidden");
+  document.getElementById("resetBtn")?.classList.add("hidden");
+  document.getElementById("livePulse")?.classList.add("hidden");
+
   const capAlert = document.getElementById("capAlertBanner");
   if (capAlert) capAlert.classList.add("hidden");
   const cachedBanner = document.getElementById("cachedRunBanner");
   if (cachedBanner) cachedBanner.classList.add("hidden");
 
   // Reset counters
-  document.getElementById("telemetryTotalCost").innerText = "$0.000000";
-  document.getElementById("telemetryTotalTokens").innerText = "0";
-  document.getElementById("costUltra").innerText = "$0.000000";
-  document.getElementById("tokensUltra").innerText = "0";
-  document.getElementById("costSuper").innerText = "$0.000000";
-  document.getElementById("tokensSuper").innerText = "0";
-  document.getElementById("reasoningSuper").innerText = "0";
-  document.getElementById("costNano").innerText = "$0.000000";
-  document.getElementById("tokensNano").innerText = "0";
+  const totalCost = document.getElementById("telemetryTotalCost");
+  if (totalCost) totalCost.innerText = "$0.000000";
+  const totalTokens = document.getElementById("telemetryTotalTokens");
+  if (totalTokens) totalTokens.innerText = "0";
+  const cUltra = document.getElementById("costUltra");
+  if (cUltra) cUltra.innerText = "$0.000000";
+  const tUltra = document.getElementById("tokensUltra");
+  if (tUltra) tUltra.innerText = "0";
+  const cSuper = document.getElementById("costSuper");
+  if (cSuper) cSuper.innerText = "$0.000000";
+  const tSuper = document.getElementById("tokensSuper");
+  if (tSuper) tSuper.innerText = "0";
+  const rSuper = document.getElementById("reasoningSuper");
+  if (rSuper) rSuper.innerText = "0";
+  const cNano = document.getElementById("costNano");
+  if (cNano) cNano.innerText = "$0.000000";
+  const tNano = document.getElementById("tokensNano");
+  if (tNano) tNano.innerText = "0";
 
   const tavCalls = document.getElementById("tavilyCallsCount");
   if (tavCalls) tavCalls.innerText = "0";
   const tavQueries = document.getElementById("tavilyQueriesCount");
   if (tavQueries) tavQueries.innerText = "0";
 
-  document.getElementById("testProgressBar").style.width = "0%";
-  document.getElementById("testRatioLabel").innerText = "0 / 0 Tests Passing";
+  const bar = document.getElementById("testProgressBar");
+  if (bar) {
+    bar.style.width = "0%";
+    bar.classList.remove("full");
+  }
+  const ratio = document.getElementById("testRatioLabel");
+  if (ratio) ratio.innerText = "0 / 0 Tests Passing";
 
   updateStatus("System Ready", "ready");
 }
 
-// Clipboard Copy Helper with Visual Feedback on Button
-function copyToClipboard(elementId, label, btnId) {
+// Clipboard Copy Helper
+function copyToClipboard(elementId, btnId, successLabel) {
   const el = document.getElementById(elementId);
-  if (!el || !el.value) {
-    showToast(`Nothing to copy for ${label}`);
-    return;
-  }
-
-  navigator.clipboard.writeText(el.value).then(() => {
-    showToast(`Copied ${label} to clipboard!`);
+  if (!el) return;
+  const text = el.value || el.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(successLabel || "Copied to clipboard");
     if (btnId) {
-      const btn = document.getElementById(btnId);
       const textSpan = document.getElementById(`${btnId}Text`);
       if (textSpan) {
-        const originalText = textSpan.innerText;
-        textSpan.innerText = "Copied! ✓";
+        const original = textSpan.innerText;
+        textSpan.innerText = "Copied!";
         setTimeout(() => {
-          textSpan.innerText = originalText;
+          textSpan.innerText = original;
         }, 2000);
       }
     }
   }).catch(err => {
-    console.error("Clipboard write error:", err);
+    console.error("Clipboard copy failed:", err);
   });
 }
 
-// Toast notification
-function showToast(message) {
-  const toast = document.getElementById("toast");
-  const msgEl = document.getElementById("toastMsg");
-  msgEl.innerText = message;
-  toast.classList.remove("translate-y-24", "opacity-0");
-  toast.classList.add("translate-y-0", "opacity-100");
-
-  setTimeout(() => {
-    toast.classList.remove("translate-y-0", "opacity-100");
-    toast.classList.add("translate-y-24", "opacity-0");
-  }, 2500);
+// Download .diff patch file
+function downloadPatchFile() {
+  if (!lastDiff) return;
+  const blob = new Blob([lastDiff], { type: "text/x-diff;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${selectedDemo}_upgrade.patch`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Downloaded .patch file");
 }
 
-// Utility: Escape HTML
-function escapeHtml(text) {
-  if (!text) return "";
-  return text
+// Toast notification
+function showToast(msg) {
+  const toast = document.getElementById("toast");
+  const msgEl = document.getElementById("toastMsg");
+  if (!toast || !msgEl) return;
+  msgEl.innerText = msg;
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
+}
+
+// HTML escape helper
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
