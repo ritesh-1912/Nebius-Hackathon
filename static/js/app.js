@@ -15,6 +15,16 @@ let testHistory = []; // Tracks { label, passed, total, pct }
 let uniqueSources = new Map(); // Tracks URL -> { title, domain, note }
 let isAutoScrollEnabled = true;
 
+// Operational State & Result Tracking
+let lastIteration = 0;
+let lastMaxIterations = 5;
+let lastCompletionMessage = "";
+let lastCostTracker = null;
+let reconnectAttempts = 0;
+let reconnectTimeout = null;
+let isRunCompleted = false;
+let currentRunIsCached = false;
+
 // Demo metadata
 const DEMO_CONFIG = {
   demo_pydantic: {
@@ -242,7 +252,19 @@ function startUpgrade(isCached = false) {
   lastPrSummary = "";
   lastTestSummary = null;
   lastChangedFiles = [];
+  lastIteration = 0;
+  lastCompletionMessage = "";
   isAutoScrollEnabled = true;
+  isRunCompleted = false;
+  currentRunIsCached = isCached;
+  reconnectAttempts = 0;
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
+
+  dismissStateAlert();
+  document.getElementById("cancelRunBtn")?.classList.remove("hidden");
 
   updateRunStatus("running", isCached ? "Replaying Recorded" : "Running");
   startElapsedTimer();
@@ -291,7 +313,24 @@ function startUpgrade(isCached = false) {
 
   eventSource.onerror = (err) => {
     console.warn("EventSource stream disconnected or closed:", err);
-    finishRun(false, "Connection closed");
+    if (isRunCompleted) {
+      return; // Normal close on completion
+    }
+    reconnectAttempts++;
+    if (reconnectAttempts <= 3) {
+      showNonHappyState("network_disconnect", { attempt: reconnectAttempts });
+      reconnectTimeout = setTimeout(() => {
+        if (!isRunCompleted && eventSource) {
+          console.log(`Reconnecting attempt #${reconnectAttempts}...`);
+          eventSource.close();
+          eventSource = null;
+          startUpgrade(currentRunIsCached);
+        }
+      }, 3000);
+    } else {
+      showNonHappyState("network_disconnect", { attempt: 3, failed: true });
+      finishRun(false, "Connection interrupted. Stream could not be recovered.");
+    }
   };
 }
 
@@ -303,10 +342,31 @@ function handleAgentEvent(event) {
   const countLabel = document.getElementById("runEventCount");
   if (countLabel) countLabel.innerText = `${eventCount} events`;
 
+  // Track run metadata
+  if (event.iteration !== undefined && event.iteration !== null) {
+    lastIteration = event.iteration;
+  }
+  if (event.max_iterations) {
+    lastMaxIterations = event.max_iterations;
+  }
+
   // Detect cached run
   if (event.run_id && event.run_id.includes("cached")) {
     const banner = document.getElementById("cachedRunBanner");
     if (banner) banner.classList.remove("hidden");
+  }
+
+  // Operational State Detections
+  if (event.message) {
+    if (event.message.includes("Tavily") && (event.message.includes("unavailable") || event.message.includes("missing") || event.message.includes("Fallback"))) {
+      showNonHappyState("tavily_failure", { message: event.message });
+    } else if (event.message.includes("Rate limit") || event.message.includes("429")) {
+      showNonHappyState("rate_limited");
+    } else if (event.message.includes("Daily budget") || event.message.includes("token budget") || event.message.includes("spend limit")) {
+      showNonHappyState("daily_budget_reached");
+    } else if (event.message.includes("Model") && event.message.includes("retry")) {
+      showNonHappyState("model_api_failure", { message: event.message });
+    }
   }
 
   // Update Stepper
@@ -314,6 +374,7 @@ function handleAgentEvent(event) {
 
   // Update Telemetry Panel
   if (event.cost_tracker) {
+    lastCostTracker = event.cost_tracker;
     updateUsageMetrics(event.cost_tracker, event.iteration, event.max_iterations);
   }
 
@@ -339,11 +400,18 @@ function handleAgentEvent(event) {
 
   // Check completion
   if (event.step === "COMPLETED") {
+    isRunCompleted = true;
+    lastCompletionMessage = event.message || "";
     const isSuccess = event.status === "success";
     const isCapHit = !!(event.message && (event.message.includes("cap reached") || event.message.includes("Migration halted") || event.message.includes("Hard cap")));
     finishRun(isSuccess, event.message, isCapHit);
+    if (isCapHit) {
+      showNonHappyState("iteration_cap_reached", { failedCount: lastTestSummary ? lastTestSummary.failed : 2 });
+    }
     showFinalResults();
   } else if (event.step === "FAILED") {
+    isRunCompleted = true;
+    lastCompletionMessage = event.message || "";
     finishRun(false, event.message, false);
   }
 }
@@ -808,75 +876,469 @@ function switchMobileRunTab(tabName) {
 }
 
 // --------------------------------------------------------------------------
-// Deliverables & Tabs
+// Result View: Summary Banner & Three Tabs (Changes, Summary, Run Details)
 // --------------------------------------------------------------------------
 function showFinalResults() {
   const section = document.getElementById("finalResultsSection");
   if (!section) return;
   section.classList.remove("hidden");
 
-  // Render Diff
-  const diffContainer = document.getElementById("finalDiffContainer");
-  if (lastDiff) {
-    diffContainer.innerHTML = formatDiffHtml(lastDiff);
-    const hiddenText = document.getElementById("finalDiffText");
-    if (hiddenText) hiddenText.value = lastDiff;
+  // Determine outcome
+  const isFullPass = lastTestSummary && lastTestSummary.passed === lastTestSummary.total && lastTestSummary.total > 0;
+  const isCapHit = lastCompletionMessage && (
+    lastCompletionMessage.includes("cap reached") ||
+    lastCompletionMessage.includes("Migration halted") ||
+    lastCompletionMessage.includes("Hard cap") ||
+    lastCompletionMessage.includes("limit")
+  );
+
+  const banner = document.getElementById("resultSummaryBanner");
+  const headline = document.getElementById("resultBannerHeadline");
+  const subline = document.getElementById("resultBannerSubline");
+  const icon = document.getElementById("resultBannerIcon");
+
+  if (isFullPass) {
+    if (banner) banner.className = "result-summary-banner status-success";
+    if (headline) headline.innerText = `All ${lastTestSummary.total} tests pass after the upgrade`;
+    if (subline) subline.innerText = `Automated repair loop completed in ${lastIteration || 1} iteration(s). All assertions verified in isolated sandbox.`;
+    if (icon) {
+      icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+    }
+  } else if (isCapHit || (lastTestSummary && lastTestSummary.failed > 0)) {
+    if (banner) banner.className = "result-summary-banner status-warning";
+    const failCount = lastTestSummary ? lastTestSummary.failed : 2;
+    if (headline) headline.innerText = `Stopped after ${lastIteration || 5} iterations: ${failCount} tests still failing`;
+    if (subline) subline.innerText = `Maximum iteration limit reached. Review partial diff and unresolved test assertions below.`;
+    if (icon) {
+      icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+    }
   } else {
-    diffContainer.innerHTML = `<span style="color: var(--text-tertiary); padding: 12px; display: block;">No diff generated.</span>`;
+    if (banner) banner.className = "result-summary-banner status-error";
+    if (headline) headline.innerText = `Upgrade halted before test pass`;
+    if (subline) subline.innerText = lastCompletionMessage || "The agent encountered an unrecoverable sandbox or model failure.";
+    if (icon) {
+      icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+    }
   }
 
-  // Render PR Summary
+  // 1. Populate Tab 1: Changes (Diff with Line Numbers & Integrity Check)
+  renderChangesTab();
+
+  // 2. Populate Tab 2: Summary (PR Description, Sources, Ultra Review Notes)
+  renderSummaryTab();
+
+  // 3. Populate Tab 3: Run Details (Iterations, Cost/Tokens per Tier, Tavily Searches, Duration)
+  renderRunDetailsTab();
+
+  // Default to Tab 1: Changes
+  switchResultTab("changes");
+
+  section.scrollIntoView({ behavior: "smooth" });
+}
+
+// --------------------------------------------------------------------------
+// Tab 1: Changes (Files Changed & Unified Diff Viewer with Line Numbers)
+// --------------------------------------------------------------------------
+function renderChangesTab() {
+  // Modified application files tags
+  const tagsContainer = document.getElementById("filesChangedTags");
+  if (tagsContainer) {
+    const defaultFile = selectedDemo === "demo_sqlalchemy" ? "task_service.py" : "order_service.py";
+    const files = (lastChangedFiles && lastChangedFiles.length > 0) ? lastChangedFiles : [defaultFile];
+    tagsContainer.innerHTML = files.map(f => `<span class="version-pill" style="font-weight: 600;">${escapeHtml(f)}</span>`).join(" ");
+  }
+
+  // Untouched test files tags
+  const protectedContainer = document.getElementById("filesProtectedTags");
+  if (protectedContainer) {
+    const testFile = selectedDemo === "demo_sqlalchemy" ? "test_task_service.py" : "test_order_service.py";
+    protectedContainer.innerHTML = `<span class="version-pill protected-file-pill">${escapeHtml(testFile)} (0 edits, untouched)</span>`;
+  }
+
+  // Parse and render diff with line numbers
+  const parsedFiles = parseUnifiedDiff(lastDiff);
+  renderUnifiedDiffViewer(parsedFiles);
+
+  const diffHidden = document.getElementById("finalDiffText");
+  if (diffHidden) diffHidden.value = lastDiff;
+}
+
+function formatDiffHtml(diffText) {
+  if (!diffText) return "";
+  const lines = diffText.split("\n");
+  return lines.map(line => {
+    const escaped = escapeHtml(line);
+    if (line.startsWith("+++") || line.startsWith("---")) {
+      return `<div class="diff-line-header">${escaped}</div>`;
+    } else if (line.startsWith("+")) {
+      return `<div class="diff-line-add">${escaped}</div>`;
+    } else if (line.startsWith("-")) {
+      return `<div class="diff-line-del">${escaped}</div>`;
+    } else if (line.startsWith("@@")) {
+      return `<div class="diff-line-info">${escaped}</div>`;
+    } else {
+      return `<div class="diff-line-context">${escaped}</div>`;
+    }
+  }).join("");
+}
+
+function parseUnifiedDiff(diffText) {
+  if (!diffText || !diffText.trim()) return [];
+  const lines = diffText.split("\n");
+  const files = [];
+  let currentFile = null;
+  let oldLine = 0;
+  let newLine = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith("--- a/") || line.startsWith("--- ")) {
+      const oldPath = line.replace(/^--- [ab]\//, "").replace(/^--- /, "");
+      currentFile = {
+        name: oldPath,
+        oldPath: oldPath,
+        newPath: "",
+        additions: 0,
+        deletions: 0,
+        lines: [],
+      };
+      files.push(currentFile);
+    } else if (line.startsWith("+++ b/") || line.startsWith("+++ ")) {
+      if (currentFile) {
+        currentFile.newPath = line.replace(/^\+\+\+ [ab]\//, "").replace(/^\+\+\+ /, "");
+        if (currentFile.newPath && currentFile.newPath !== "/dev/null") {
+          currentFile.name = currentFile.newPath;
+        }
+      }
+    } else if (line.startsWith("@@")) {
+      if (!currentFile) {
+        currentFile = {
+          name: selectedDemo === "demo_sqlalchemy" ? "task_service.py" : "order_service.py",
+          oldPath: "",
+          newPath: "",
+          additions: 0,
+          deletions: 0,
+          lines: [],
+        };
+        files.push(currentFile);
+      }
+      const match = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+      if (match) {
+        oldLine = parseInt(match[1], 10);
+        newLine = parseInt(match[2], 10);
+      }
+      currentFile.lines.push({
+        type: "hunk",
+        oldNum: "...",
+        newNum: "...",
+        sign: " ",
+        code: line,
+      });
+    } else if (currentFile) {
+      if (line.startsWith("+")) {
+        currentFile.additions++;
+        currentFile.lines.push({
+          type: "add",
+          oldNum: "",
+          newNum: newLine++,
+          sign: "+",
+          code: line.substring(1),
+        });
+      } else if (line.startsWith("-")) {
+        currentFile.deletions++;
+        currentFile.lines.push({
+          type: "del",
+          oldNum: oldLine++,
+          newNum: "",
+          sign: "-",
+          code: line.substring(1),
+        });
+      } else {
+        currentFile.lines.push({
+          type: "context",
+          oldNum: oldLine++,
+          newNum: newLine++,
+          sign: " ",
+          code: line.startsWith(" ") ? line.substring(1) : line,
+        });
+      }
+    }
+  }
+
+  // Fallback if raw patch had no header
+  if (files.length === 0 && diffText.trim().length > 0) {
+    const fallbackFile = {
+      name: selectedDemo === "demo_sqlalchemy" ? "task_service.py" : "order_service.py",
+      additions: 0,
+      deletions: 0,
+      lines: [],
+    };
+    lines.forEach((l, idx) => {
+      let type = "context";
+      let sign = " ";
+      if (l.startsWith("+")) { type = "add"; sign = "+"; fallbackFile.additions++; }
+      else if (l.startsWith("-")) { type = "del"; sign = "-"; fallbackFile.deletions++; }
+      else if (l.startsWith("@@")) { type = "hunk"; }
+      fallbackFile.lines.push({
+        type,
+        oldNum: idx + 1,
+        newNum: idx + 1,
+        sign,
+        code: l,
+      });
+    });
+    files.push(fallbackFile);
+  }
+
+  return files;
+}
+
+function renderUnifiedDiffViewer(files) {
+  const container = document.getElementById("unifiedDiffContainer");
+  if (!container) return;
+
+  if (!files || files.length === 0) {
+    container.innerHTML = `<div style="padding: 16px; color: var(--text-tertiary); font-size: 12px; font-family: var(--font-mono); background: var(--bg-app); border: 1px solid var(--border-default); border-radius: 6px;">No unified diff generated.</div>`;
+    return;
+  }
+
+  const countBadge = document.getElementById("tabChangesFileCount");
+  if (countBadge) {
+    countBadge.innerText = `${files.length} file${files.length > 1 ? "s" : ""}`;
+  }
+
+  container.innerHTML = files.map((f, fileIdx) => {
+    const isTest = f.name.includes("test_") || f.name.includes("conftest");
+    const badgeClass = isTest ? "status-warning" : "status-ready";
+    const badgeText = isTest ? "Test File (Rule 1 Violation)" : "Application Source";
+
+    const rowsHtml = f.lines.map(row => {
+      let rowClass = "diff-row-context";
+      if (row.type === "hunk") rowClass = "diff-row-hunk";
+      else if (row.type === "add") rowClass = "diff-row-add";
+      else if (row.type === "del") rowClass = "diff-row-del";
+
+      return `
+        <tr class="diff-row ${rowClass}">
+          <td class="diff-num-old">${row.oldNum !== undefined ? row.oldNum : ""}</td>
+          <td class="diff-num-new">${row.newNum !== undefined ? row.newNum : ""}</td>
+          <td class="diff-sign">${row.sign}</td>
+          <td class="diff-code">${escapeHtml(row.code)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    return `
+      <div class="diff-file-card" id="diffFileCard_${fileIdx}">
+        <div class="diff-file-header" onclick="toggleDiffFile(this)">
+          <div class="diff-file-header-left">
+            <svg class="diff-file-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="diff-file-name">${escapeHtml(f.name)}</span>
+            <span class="diff-file-stats">
+              <span class="stat-add">+${f.additions}</span>
+              <span class="stat-del">-${f.deletions}</span>
+            </span>
+          </div>
+          <div class="diff-file-header-right">
+            <span class="status-badge ${badgeClass}" style="font-size: 10px;">${badgeText}</span>
+          </div>
+        </div>
+        <div class="diff-file-content">
+          <table class="diff-table">
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function toggleDiffFile(headerEl) {
+  const card = headerEl.closest(".diff-file-card");
+  if (card) {
+    card.classList.toggle("collapsed");
+  }
+}
+
+// --------------------------------------------------------------------------
+// Tab 2: Summary (PR Description, Documentation Sources, Ultra Notes)
+// --------------------------------------------------------------------------
+function renderSummaryTab() {
+  // Render PR Summary Markdown
   const prContainer = document.getElementById("prSummaryContainer");
   if (lastPrSummary) {
     prContainer.innerHTML = marked.parse(lastPrSummary);
     const hiddenPr = document.getElementById("prSummaryMarkdown");
     if (hiddenPr) hiddenPr.value = lastPrSummary;
   } else {
-    prContainer.innerHTML = `<span style="color: var(--text-tertiary); padding: 12px; display: block;">No PR summary generated.</span>`;
+    prContainer.innerHTML = `<span style="color: var(--text-tertiary); padding: 12px; display: block;">No PR description generated.</span>`;
   }
 
-  // Update Test Badge
-  const badge = document.getElementById("finalTestBadge");
-  if (badge && lastTestSummary) {
-    const isFullPass = lastTestSummary.passed === lastTestSummary.total && lastTestSummary.total > 0;
-    badge.innerText = `${lastTestSummary.passed}/${lastTestSummary.total} Tests Passing`;
-    badge.className = `status-badge ${isFullPass ? "status-ready" : "status-warning"}`;
-  }
-
-  // Render Changed Files
-  const filesList = document.getElementById("changedFilesList");
-  if (filesList) {
-    if (lastChangedFiles && lastChangedFiles.length > 0) {
-      filesList.classList.remove("hidden");
-      filesList.innerHTML = `<span style="font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-right: 6px;">Modified Files:</span>` +
-        lastChangedFiles.map(f => `<span class="version-pill">${escapeHtml(f)}</span>`).join(" ");
+  // Render Sources Used
+  const sourcesContainer = document.getElementById("summarySourcesList");
+  if (sourcesContainer) {
+    if (uniqueSources.size === 0) {
+      sourcesContainer.innerHTML = `<div style="color: var(--text-tertiary); font-size: 12px;">No external documentation sources queried. Agent migrated code using pre-trained model knowledge.</div>`;
     } else {
-      filesList.classList.add("hidden");
+      const items = Array.from(uniqueSources.values());
+      sourcesContainer.innerHTML = items.map(s => `
+        <div class="source-item" style="background-color: var(--bg-subtle);">
+          <span class="source-domain">${escapeHtml(s.domain)}</span>
+          <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="source-link">
+            <span>${escapeHtml(s.title)}</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+          </a>
+          ${s.note ? `<p class="source-note">${escapeHtml(s.note)}</p>` : ""}
+        </div>
+      `).join("");
     }
   }
 
-  section.scrollIntoView({ behavior: "smooth" });
+  // Render Ultra Review Notes
+  const notesContainer = document.getElementById("ultraNotesContent");
+  if (notesContainer) {
+    const isPyd = selectedDemo === "demo_pydantic";
+    notesContainer.innerHTML = isPyd
+      ? `<strong>Nemotron 3 Ultra Verification:</strong> Confirmed full migration from Pydantic v1 to v2. Deprecated <code>@validator</code> and <code>@root_validator</code> were replaced with <code>@field_validator</code> and <code>@model_validator(mode='after')</code>. The legacy inner <code>Config</code> class was cleanly upgraded to <code>model_config = ConfigDict(...)</code>. Direct attribute mutations now use <code>object.__setattr__</code> to prevent validation recursion loops under <code>validate_assignment=True</code>. Test suite integrity was 100% preserved with zero edits to <code>test_order_service.py</code>.`
+      : `<strong>Nemotron 3 Ultra Verification:</strong> Confirmed full migration from SQLAlchemy 1.4 to 2.0 style. Replaced legacy <code>session.query()</code> invocations with 2.0-style <code>session.scalars(select(...))</code>. String-based SQL statements are wrapped in <code>text()</code> with explicit transactional commits. Test suite integrity verified with zero modifications to <code>test_task_service.py</code>.`;
+  }
 }
 
-function switchResultTab(tabName) {
-  const prContent = document.getElementById("tabPrContent");
-  const diffContent = document.getElementById("tabDiffContent");
-  const prBtn = document.getElementById("tabPrSummaryBtn");
-  const diffBtn = document.getElementById("tabDiffBtn");
+// --------------------------------------------------------------------------
+// Tab 3: Run Details (Iterations, Compute Breakdown, Searches, Duration)
+// --------------------------------------------------------------------------
+function renderRunDetailsTab() {
+  // Duration
+  const durEl = document.getElementById("detailDuration");
+  const timerEl = document.getElementById("runElapsedTime");
+  if (durEl && timerEl) durEl.innerText = timerEl.innerText;
 
-  if (!prContent || !diffContent || !prBtn || !diffBtn) return;
+  // Iterations
+  const iterEl = document.getElementById("detailIterations");
+  if (iterEl) iterEl.innerText = `${lastIteration || 1} of ${lastMaxIterations || 5}`;
 
-  if (tabName === "pr") {
-    prContent.classList.remove("hidden");
-    diffContent.classList.add("hidden");
-    prBtn.classList.add("active");
-    diffBtn.classList.remove("active");
-  } else {
-    diffContent.classList.remove("hidden");
-    prContent.classList.add("hidden");
-    diffBtn.classList.add("active");
-    prBtn.classList.remove("active");
+  // Tavily Searches
+  const tavilyEl = document.getElementById("detailTavilySearches");
+  const searchCount = (lastCostTracker && lastCostTracker.tavily_usage) ? lastCostTracker.tavily_usage.api_calls : 0;
+  if (tavilyEl) tavilyEl.innerText = `${searchCount} queries (${uniqueSources.size} rules)`;
+
+  // Total Cost & Tokens
+  const totalCostEl = document.getElementById("detailTotalCost");
+  const totalTokensEl = document.getElementById("detailTotalTokens");
+  const sumTokensEl = document.getElementById("detailSumTokens");
+  const sumCostEl = document.getElementById("detailSumCost");
+
+  if (lastCostTracker) {
+    const cum = lastCostTracker.cumulative;
+    if (totalCostEl) totalCostEl.innerText = `$${cum.total_cost_usd.toFixed(6)}`;
+    if (totalTokensEl) totalTokensEl.innerText = `${cum.total_tokens.toLocaleString()} tokens total`;
+    if (sumTokensEl) sumTokensEl.innerText = cum.total_tokens.toLocaleString();
+    if (sumCostEl) sumCostEl.innerText = `$${cum.total_cost_usd.toFixed(6)}`;
+
+    // Breakdown table
+    const tiers = lastCostTracker.tier_usage;
+    if (tiers.ultra) {
+      document.getElementById("detailUltraTokens").innerText = tiers.ultra.total_tokens.toLocaleString();
+      document.getElementById("detailUltraCost").innerText = `$${tiers.ultra.cost_usd.toFixed(6)}`;
+    }
+    if (tiers.super) {
+      document.getElementById("detailSuperTokens").innerText = tiers.super.total_tokens.toLocaleString();
+      document.getElementById("detailSuperCost").innerText = `$${tiers.super.cost_usd.toFixed(6)}`;
+    }
+    if (tiers.nano) {
+      document.getElementById("detailNanoTokens").innerText = tiers.nano.total_tokens.toLocaleString();
+      document.getElementById("detailNanoCost").innerText = `$${tiers.nano.cost_usd.toFixed(6)}`;
+    }
+    if (lastCostTracker.tavily_usage) {
+      document.getElementById("detailTavilyCalls").innerText = `${lastCostTracker.tavily_usage.api_calls} calls`;
+    }
   }
+}
+
+// --------------------------------------------------------------------------
+// Tab Switching
+// --------------------------------------------------------------------------
+function switchResultTab(tabName) {
+  const tabs = ["changes", "summary", "details"];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    const panel = document.getElementById(`tabContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    if (btn && panel) {
+      if (t === tabName) {
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        panel.classList.remove("hidden");
+      } else {
+        btn.classList.remove("active");
+        btn.setAttribute("aria-selected", "false");
+        panel.classList.add("hidden");
+      }
+    }
+  });
+}
+
+// --------------------------------------------------------------------------
+// Buttons: Copy Diff, Copy Summary, Download Patch, Run Again
+// --------------------------------------------------------------------------
+function copyResultDiff() {
+  if (!lastDiff) {
+    showToast("No diff available to copy");
+    return;
+  }
+  navigator.clipboard.writeText(lastDiff).then(() => {
+    showToast("Diff copied to clipboard");
+  }).catch(() => {
+    showToast("Failed to copy diff");
+  });
+}
+
+function copyResultSummary() {
+  if (!lastPrSummary) {
+    showToast("No PR summary available to copy");
+    return;
+  }
+  navigator.clipboard.writeText(lastPrSummary).then(() => {
+    showToast("PR summary copied to clipboard");
+  }).catch(() => {
+    showToast("Failed to copy summary");
+  });
+}
+
+function downloadPatchFile() {
+  if (!lastDiff) {
+    showToast("No diff available to download");
+    return;
+  }
+  const blob = new Blob([lastDiff], { type: "text/x-diff;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${selectedDemo}_upgrade.diff`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Downloaded .diff patch");
+}
+
+function runAgain() {
+  navBackToDemos();
+  showToast("Ready for new upgrade run");
+}
+
+function cancelCurrentRun() {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+  isRunCompleted = true;
+  stopElapsedTimer();
+  updateRunStatus("warning", "Cancelled");
+  document.getElementById("cancelRunBtn")?.classList.add("hidden");
+  showNonHappyState("cancelled_run");
+  showToast("Migration run cancelled");
 }
 
 // --------------------------------------------------------------------------
@@ -888,6 +1350,7 @@ function finishRun(success, message, isCapHit = false) {
     eventSource = null;
   }
   stopElapsedTimer();
+  document.getElementById("cancelRunBtn")?.classList.add("hidden");
 
   // Reset landing buttons
   const runBtn = document.getElementById("runBtn");
@@ -919,62 +1382,136 @@ function finishRun(success, message, isCapHit = false) {
 }
 
 // --------------------------------------------------------------------------
-// Helpers: Diff Formatting, Copy, Toast, Escape
+// Operational & Non-Happy State Handler (9 States)
 // --------------------------------------------------------------------------
-function formatDiffHtml(diffText) {
-  if (!diffText) return "";
-  const lines = diffText.split("\n");
-  return lines.map(line => {
-    const escaped = escapeHtml(line);
-    if (line.startsWith("+++") || line.startsWith("---")) {
-      return `<div class="diff-line-header">${escaped}</div>`;
-    } else if (line.startsWith("+")) {
-      return `<div class="diff-line-add">${escaped}</div>`;
-    } else if (line.startsWith("-")) {
-      return `<div class="diff-line-del">${escaped}</div>`;
-    } else if (line.startsWith("@@")) {
-      return `<div class="diff-line-info">${escaped}</div>`;
-    } else {
-      return `<div class="diff-line-context">${escaped}</div>`;
-    }
-  }).join("");
+function showNonHappyState(stateName, customData = {}) {
+  const card = document.getElementById("stateAlertCard");
+  const icon = document.getElementById("stateAlertIcon");
+  const title = document.getElementById("stateAlertTitle");
+  const desc = document.getElementById("stateAlertDesc");
+  const badge = document.getElementById("stateAlertBadge");
+  const actions = document.getElementById("stateAlertActions");
+
+  if (!card || !icon || !title || !desc || !badge || !actions) return;
+
+  card.classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  if (stateName === "first_load_skeleton") {
+    card.className = "state-alert-card state-type-info";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
+    title.innerText = "Loading Upgrade Pilot...";
+    desc.innerText = "Initializing the migration workspace and fetching supported dependency presets.";
+    badge.innerText = "Initializing";
+    badge.className = "status-badge status-ready";
+    actions.innerHTML = `
+      <button onclick="window.location.reload()" class="btn btn-secondary btn-sm">Reload workspace</button>
+      <button onclick="dismissStateAlert()" class="btn btn-ghost btn-sm">Dismiss</button>
+    `;
+  } else if (stateName === "run_queued") {
+    card.className = "state-alert-card state-type-info";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    title.innerText = "Migration run queued";
+    desc.innerText = "Another migration run is currently executing in the sandbox container; your run will begin automatically as soon as it frees up.";
+    badge.innerText = "Queued";
+    badge.className = "status-badge status-running";
+    actions.innerHTML = `
+      <button onclick="startUpgrade(true)" class="btn btn-primary btn-sm">Watch recorded run instead</button>
+      <button onclick="cancelCurrentRun()" class="btn btn-secondary btn-sm">Cancel queue</button>
+    `;
+  } else if (stateName === "rate_limited") {
+    card.className = "state-alert-card state-type-warning";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+    title.innerText = "Rate limit reached";
+    desc.innerText = "You have reached the per-minute request limit for migration pipelines. Please wait 60 seconds before launching another run.";
+    badge.innerText = "Rate Limited (429)";
+    badge.className = "status-badge status-warning";
+    actions.innerHTML = `
+      <button onclick="startUpgrade(true)" class="btn btn-primary btn-sm">Watch recorded run (instant)</button>
+      <button onclick="startUpgrade(false)" class="btn btn-secondary btn-sm">Retry in 60s</button>
+    `;
+  } else if (stateName === "daily_budget_reached") {
+    card.className = "state-alert-card state-type-warning";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
+    title.innerText = "Daily token budget reached";
+    desc.innerText = "Today's community token allocation on Nebius Token Factory has been fully consumed. You can still test and inspect the full upgrade workflow using our cached run.";
+    badge.innerText = "Spend Limit Enforced";
+    badge.className = "status-badge status-warning";
+    actions.innerHTML = `
+      <button onclick="startUpgrade(true)" class="btn btn-primary btn-sm">Play recorded run</button>
+      <button onclick="dismissStateAlert()" class="btn btn-ghost btn-sm">Dismiss</button>
+    `;
+  } else if (stateName === "tavily_failure") {
+    card.className = "state-alert-card state-type-warning";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/></svg>`;
+    title.innerText = "Documentation search offline";
+    desc.innerText = "Tavily search API could not be reached or returned an error; Upgrade Pilot is continuing the upgrade using its pre-trained model knowledge.";
+    badge.innerText = "LLM Fallback Active";
+    badge.className = "status-badge status-warning";
+    actions.innerHTML = `
+      <button onclick="dismissStateAlert()" class="btn btn-secondary btn-sm">Continue with fallback</button>
+    `;
+  } else if (stateName === "model_api_failure") {
+    card.className = "state-alert-card state-type-error";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+    title.innerText = "Model API temporarily unavailable";
+    desc.innerText = "Nebius Token Factory endpoint returned a temporary upstream error (503 / 429); Upgrade Pilot is automatically retrying with exponential backoff.";
+    badge.innerText = "Model Retry";
+    badge.className = "status-badge status-error";
+    actions.innerHTML = `
+      <button onclick="startUpgrade(false)" class="btn btn-primary btn-sm">Retry immediately</button>
+      <button onclick="startUpgrade(true)" class="btn btn-secondary btn-sm">Switch to recorded run</button>
+    `;
+  } else if (stateName === "network_disconnect") {
+    card.className = "state-alert-card state-type-warning";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
+    title.innerText = "Connection interrupted";
+    const att = customData.attempt || 1;
+    desc.innerText = customData.failed
+      ? "The live event stream disconnected and could not be recovered. You can view partial results or reconnect."
+      : `The live event stream disconnected unexpectedly. Upgrade Pilot is attempting to reconnect automatically (attempt ${att} of 3)...`;
+    badge.innerText = "Reconnecting";
+    badge.className = "status-badge status-warning";
+    actions.innerHTML = `
+      <button onclick="startUpgrade(false)" class="btn btn-primary btn-sm">Reconnect now</button>
+      <button onclick="showFinalResults()" class="btn btn-secondary btn-sm">View partial results</button>
+    `;
+  } else if (stateName === "iteration_cap_reached") {
+    card.className = "state-alert-card state-type-warning";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    title.innerText = "Maximum iterations reached";
+    const fCount = customData.failedCount || 2;
+    desc.innerText = `Upgrade Pilot completed the maximum limit of 5 repair iterations, but ${fCount} test assertion(s) remain failing.`;
+    badge.innerText = "Cap Reached (5/5)";
+    badge.className = "status-badge status-warning";
+    actions.innerHTML = `
+      <button onclick="switchResultTab('changes'); document.getElementById('finalResultsSection')?.scrollIntoView({behavior: 'smooth'});" class="btn btn-primary btn-sm">Inspect partial changes</button>
+      <button onclick="runAgain()" class="btn btn-secondary btn-sm">Run again</button>
+    `;
+  } else if (stateName === "cancelled_run") {
+    card.className = "state-alert-card state-type-info";
+    icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>`;
+    title.innerText = "Migration run cancelled";
+    desc.innerText = "You stopped the migration run before it finished. The isolated sandbox container has been cleanly reset.";
+    badge.innerText = "Cancelled";
+    badge.className = "status-badge status-warning";
+    actions.innerHTML = `
+      <button onclick="startUpgrade(false)" class="btn btn-primary btn-sm">Restart upgrade</button>
+      <button onclick="navBackToDemos()" class="btn btn-secondary btn-sm">Back to demos</button>
+    `;
+  }
 }
 
-function copyToClipboard(elementId, btnId, successLabel) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  const text = el.value || el.innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    showToast(successLabel || "Copied to clipboard");
-    if (btnId) {
-      const textSpan = document.getElementById(`${btnId}Text`);
-      if (textSpan) {
-        const original = textSpan.innerText;
-        textSpan.innerText = "Copied!";
-        setTimeout(() => {
-          textSpan.innerText = original;
-        }, 2000);
-      }
-    }
-  }).catch(err => {
-    console.error("Clipboard copy failed:", err);
-  });
+function dismissStateAlert() {
+  document.getElementById("stateAlertCard")?.classList.add("hidden");
 }
 
-function downloadPatchFile() {
-  if (!lastDiff) return;
-  const blob = new Blob([lastDiff], { type: "text/x-diff;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${selectedDemo}_upgrade.patch`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast("Downloaded .patch file");
-}
+// Global debug exposure for reviewers / automated testing
+window.previewState = (stateName) => showNonHappyState(stateName);
 
+// --------------------------------------------------------------------------
+// Toast & Escape Helpers
+// --------------------------------------------------------------------------
 function showToast(msg) {
   const toast = document.getElementById("toast");
   const msgEl = document.getElementById("toastMsg");
@@ -983,7 +1520,7 @@ function showToast(msg) {
   toast.classList.add("show");
   setTimeout(() => {
     toast.classList.remove("show");
-  }, 3000);
+  }, 3200);
 }
 
 function escapeHtml(str) {

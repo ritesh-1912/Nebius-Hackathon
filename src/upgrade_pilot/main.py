@@ -202,22 +202,23 @@ async def stream_upgrade(
     client_ip = request.client.host if request.client else "127.0.0.1"
 
     async def sse_event_publisher():
-        # 2. Check Rate Limiter
-        allowed_rate, rate_msg = budget_limiter.check_rate_limit(client_ip)
-        if not allowed_rate:
-            err_evt = {
-                "event_id": "evt_ratelimit",
-                "run_id": "run_ratelimit",
-                "demo_id": canonical_demo,
-                "step": "INIT",
-                "status": "error",
-                "message": rate_msg,
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "payload": {},
-                "telemetry": {},
-            }
-            yield f"data: {json.dumps(err_evt)}\n\n"
-            return
+        # 2. Check Rate Limiter for Live Runs (cached runs are always accessible)
+        if not cached:
+            allowed_rate, rate_msg = budget_limiter.check_rate_limit(client_ip)
+            if not allowed_rate:
+                err_evt = {
+                    "event_id": "evt_ratelimit",
+                    "run_id": "run_ratelimit",
+                    "demo_id": canonical_demo,
+                    "step": "INIT",
+                    "status": "error",
+                    "message": rate_msg,
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "payload": {},
+                    "telemetry": {},
+                }
+                yield f"data: {json.dumps(err_evt)}\n\n"
+                return
 
         # 3. Check Daily Token Budget & Cached Fallback
         budget_ok, budget_msg = budget_limiter.check_daily_budget()

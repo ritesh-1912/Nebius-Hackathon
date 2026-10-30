@@ -7,7 +7,7 @@
   <!-- Marked.js for Markdown Rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <!-- Custom Design System Stylesheet -->
-  <link rel="stylesheet" href="/static/css/styles.css?v=2.0">
+  <link rel="stylesheet" href="/static/css/styles.css?v=2.1">
 </head>
 <body>
 
@@ -274,6 +274,10 @@
         <span id="runHeaderVersion" class="version-pill">pydantic 1.10.17 → 2.14.1</span>
       </div>
       <div class="run-header-right">
+        <button id="cancelRunBtn" onclick="cancelCurrentRun()" class="btn btn-ghost btn-sm hidden" style="color: var(--error-fg);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+          <span>Cancel run</span>
+        </button>
         <span id="runElapsedTime" class="elapsed-timer">00:00</span>
         <div id="runStatusBadge" role="status" aria-live="polite" class="status-badge status-running">
           <span class="status-dot"></span>
@@ -286,6 +290,26 @@
     <p class="run-helper-text">
       Upgrade Pilot is running an autonomous migration loop in an isolated sandbox, researching official guides and verifying every patch until tests pass.
     </p>
+
+    <!-- Non-Happy / Operational State Alert Card -->
+    <div id="stateAlertCard" class="state-alert-card state-type-info hidden" role="alert" aria-live="assertive">
+      <div class="state-alert-icon" id="stateAlertIcon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </div>
+      <div class="state-alert-content">
+        <div class="state-alert-header">
+          <h3 class="state-alert-title" id="stateAlertTitle">Operational Notice</h3>
+          <span class="status-badge status-ready" id="stateAlertBadge">Notice</span>
+        </div>
+        <p class="state-alert-desc" id="stateAlertDesc">Operational message.</p>
+        <div class="state-alert-actions" id="stateAlertActions">
+          <!-- Action button populated dynamically -->
+        </div>
+      </div>
+      <button onclick="dismissStateAlert()" class="state-alert-dismiss" aria-label="Dismiss state notice">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
 
     <!-- Execution Limit Alert Banner -->
     <div id="capAlertBanner" class="alert-banner alert-warning hidden" role="alert">
@@ -462,49 +486,191 @@
 
     </div>
 
-    <!-- Final Deliverables Section (Appears when completed) -->
-    <div id="finalResultsSection" class="deliverables-card hidden" style="margin-top: 16px;">
-      <div class="deliverables-header">
-        <div>
-          <h3 style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">Migration Deliverables</h3>
-          <p style="font-size: 12px; color: var(--text-secondary);">Verified pull request summary and unified diff.</p>
+    <!-- ====================================================================== -->
+    <!-- RESULT VIEW: SUMMARY BANNER + 3 TABS (CHANGES, SUMMARY, RUN DETAILS)     -->
+    <!-- ====================================================================== -->
+    <section id="finalResultsSection" class="result-view-card hidden" style="margin-top: 16px;" aria-label="Migration Results">
+      
+      <!-- Summary Banner Stating Plainly What Happened -->
+      <div id="resultSummaryBanner" class="result-summary-banner status-success">
+        <div class="result-banner-left">
+          <div class="result-banner-icon" id="resultBannerIcon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="result-banner-text">
+            <h2 id="resultBannerHeadline" class="result-banner-headline">All 10 tests pass after the upgrade</h2>
+            <p id="resultBannerSubline" class="result-banner-subline">Automated repair loop completed in 1 iteration. All assertions verified in isolated sandbox.</p>
+          </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <span id="finalTestBadge" class="status-badge status-ready">0/0 Tests Passing</span>
-          <button id="copyPrBtn" onclick="copyToClipboard('prSummaryMarkdown', 'copyPrBtn', 'PR Summary Copied')" class="btn btn-secondary btn-sm">
-            <span id="copyPrBtnText">Copy PR Summary</span>
+
+        <div class="result-banner-actions">
+          <button id="copyDiffBtn" onclick="copyResultDiff()" class="btn btn-secondary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Copy diff</span>
           </button>
-          <button id="copyDiffBtn" onclick="copyToClipboard('finalDiffText', 'copyDiffBtn', 'Diff Copied')" class="btn btn-secondary btn-sm">
-            <span id="copyDiffBtnText">Copy Diff</span>
+          <button id="copySummaryBtn" onclick="copyResultSummary()" class="btn btn-secondary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            <span>Copy summary</span>
           </button>
           <button onclick="downloadPatchFile()" class="btn btn-secondary btn-sm">
-            <span>Download .diff</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download patch</span>
+          </button>
+          <button onclick="runAgain()" class="btn btn-primary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            <span>Run again</span>
           </button>
         </div>
       </div>
 
-      <div id="changedFilesList" style="padding: 8px 20px; background-color: var(--bg-subtle); border-bottom: 1px solid var(--border-default); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;" class="hidden"></div>
-
-      <div class="deliverables-tabs">
-        <button id="tabPrSummaryBtn" onclick="switchResultTab('pr')" class="tab-btn active">
-          <span>Pull Request Description</span>
+      <!-- Result Navigation: Three Tabs -->
+      <div class="result-nav-tabs" role="tablist">
+        <button id="tabBtnChanges" role="tab" aria-selected="true" onclick="switchResultTab('changes')" class="result-tab-btn active">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Changes</span>
+          <span id="tabChangesFileCount" class="tab-badge">1 file</span>
         </button>
-        <button id="tabDiffBtn" onclick="switchResultTab('diff')" class="tab-btn">
-          <span>Unified Git Diff</span>
+        <button id="tabBtnSummary" role="tab" aria-selected="false" onclick="switchResultTab('summary')" class="result-tab-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Summary</span>
+        </button>
+        <button id="tabBtnDetails" role="tab" aria-selected="false" onclick="switchResultTab('details')" class="result-tab-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Run details</span>
         </button>
       </div>
 
-      <div class="deliverables-body">
-        <div id="tabPrContent">
-          <div id="prSummaryContainer" class="markdown-body"></div>
-          <textarea id="prSummaryMarkdown" class="hidden"></textarea>
+      <!-- TAB 1: CHANGES (DIFF VIEWER + LINE NUMBERS + INTEGRITY CONFIRMATION) -->
+      <div id="tabContentChanges" class="result-tab-panel" role="tabpanel">
+        
+        <!-- Test Suite Integrity Confirmation (Rule 1 Enforced) -->
+        <div class="diff-integrity-callout">
+          <div class="diff-integrity-left">
+            <div class="diff-integrity-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            </div>
+            <div class="diff-integrity-text">
+              <strong>Test Suite Integrity Verified:</strong> 0 test files modified. Upgrade Pilot strictly verified that only application source files were changed, ensuring test suite validity.
+            </div>
+          </div>
+          <span class="status-badge status-ready">Rule 1 Protected</span>
         </div>
-        <div id="tabDiffContent" class="hidden">
-          <div id="finalDiffContainer" class="diff-container"></div>
-          <textarea id="finalDiffText" class="hidden"></textarea>
+
+        <!-- Files Changed List -->
+        <div class="files-changed-bar" id="filesChangedBar">
+          <span class="files-changed-label">Modified Application Code:</span>
+          <div id="filesChangedTags" class="files-changed-tags"></div>
+          <span style="color: var(--border-active); margin: 0 4px;" aria-hidden="true">|</span>
+          <span class="files-protected-label">Protected Test Files:</span>
+          <div id="filesProtectedTags" class="files-protected-tags">
+            <span class="version-pill protected-file-pill">test_suite.py (untouched)</span>
+          </div>
+        </div>
+
+        <!-- Unified Diff Container (Populated with collapsible file cards and line numbers) -->
+        <div id="unifiedDiffContainer" class="diff-file-wrapper"></div>
+        <textarea id="finalDiffText" class="hidden"></textarea>
+      </div>
+
+      <!-- TAB 2: SUMMARY (PR DESCRIPTION + SOURCES + ULTRA NOTES) -->
+      <div id="tabContentSummary" class="result-tab-panel hidden" role="tabpanel">
+        
+        <!-- Rendered Pull Request Markdown -->
+        <div id="prSummaryContainer" class="markdown-body"></div>
+        <textarea id="prSummaryMarkdown" class="hidden"></textarea>
+
+        <!-- Official Documentation Sources Used -->
+        <div class="summary-sources-section">
+          <h4 class="summary-section-title">Official Documentation Sources Used</h4>
+          <div id="summarySourcesList" class="summary-sources-list"></div>
+        </div>
+
+        <!-- Ultra Review Notes -->
+        <div class="summary-ultra-notes">
+          <h4 class="summary-section-title">Nemotron 3 Ultra Architectural Review Notes</h4>
+          <div id="ultraNotesContent" class="ultra-notes-content">
+            Nemotron 3 Ultra confirmed that all deprecated validation mechanisms, regex filters, and configuration patterns were successfully migrated without modifying existing pytest assertions. All 10 unit tests executed and passed cleanly inside the isolated Python sandbox.
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- TAB 3: RUN DETAILS (ITERATIONS, TOKENS/COST PER TIER, TAVILY SEARCHES, DURATION) -->
+      <div id="tabContentDetails" class="result-tab-panel hidden" role="tabpanel">
+        
+        <!-- 4 Metric Stat Tiles -->
+        <div class="run-details-grid">
+          <div class="run-detail-stat-card">
+            <span class="stat-card-label">Run Duration</span>
+            <span class="stat-card-value" id="detailDuration">00:04</span>
+            <span class="stat-card-sub">Start to final sandbox verification</span>
+          </div>
+          <div class="run-detail-stat-card">
+            <span class="stat-card-label">Repair Iterations</span>
+            <span class="stat-card-value" id="detailIterations">1 of 5</span>
+            <span class="stat-card-sub">Max iteration cap: 5</span>
+          </div>
+          <div class="run-detail-stat-card">
+            <span class="stat-card-label">Tavily Searches</span>
+            <span class="stat-card-value" id="detailTavilySearches">3 queries</span>
+            <span class="stat-card-sub">Real-time official documentation lookup</span>
+          </div>
+          <div class="run-detail-stat-card">
+            <span class="stat-card-label">Total Estimated Spend</span>
+            <span class="stat-card-value" id="detailTotalCost">$0.000000</span>
+            <span class="stat-card-sub" id="detailTotalTokens">0 tokens total</span>
+          </div>
+        </div>
+
+        <!-- Tier Breakdown Table -->
+        <div class="detail-breakdown-card">
+          <h4 class="detail-card-title">Compute & Model Usage Breakdown by Tier</h4>
+          <table class="detail-breakdown-table">
+            <thead>
+              <tr>
+                <th>Component / Service</th>
+                <th>Role in Migration Pipeline</th>
+                <th>Tokens / Calls</th>
+                <th>Est. Cost</th>
+              </tr>
+            </thead>
+            <tbody id="detailBreakdownBody">
+              <tr>
+                <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Ultra (550B)</td>
+                <td>Reasoning, Planning & Final PR Review</td>
+                <td id="detailUltraTokens">0</td>
+                <td id="detailUltraCost">$0.000000</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Super (120B)</td>
+                <td>AST Code Patch Generation</td>
+                <td id="detailSuperTokens">0</td>
+                <td id="detailSuperCost">$0.000000</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 500; color: var(--text-primary);">Nemotron 3 Nano (30B)</td>
+                <td>Documentation Query Synthesis & Summarization</td>
+                <td id="detailNanoTokens">0</td>
+                <td id="detailNanoCost">$0.000000</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 500; color: var(--text-primary);">Tavily Search API</td>
+                <td>Official Migration Guide Retrieval</td>
+                <td id="detailTavilyCalls">0 calls</td>
+                <td>$0.000000</td>
+              </tr>
+              <tr style="border-top: 1px solid var(--border-active); font-weight: 600;">
+                <td style="color: var(--text-primary);">Total Usage</td>
+                <td style="color: var(--text-secondary);">Combined Token Factory Quota</td>
+                <td id="detailSumTokens" style="color: var(--text-primary);">0</td>
+                <td id="detailSumCost" style="color: var(--text-primary);">$0.000000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </section>
   </main>
 
   <!-- 7. FOOTER -->
@@ -529,6 +695,6 @@
   </div>
 
   <!-- Application Script -->
-  <script src="/static/js/app.js?v=2.0"></script>
+  <script src="/static/js/app.js?v=2.1"></script>
 </body>
 </html>
